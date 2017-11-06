@@ -1,0 +1,17 @@
+extends layout
+
+block content
+	h1= title
+	p Welcome to #{title}
+	form#addPart
+		div(class="form-group")
+			label(for="inputPartName") Part Name
+			input(type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter Partname")
+		div(class="form-group")
+			label(for="inputQuantity") Quantity
+			input(type="password" class="form-control" id="exampleInputPassword1" placeholder="Quantity")
+		div(class="form-check")
+			label(class="form-check-label")
+			input(type="checkbox" class="form-check-input")
+		button(id="addPart" type="button" class="btn btn-primary") Submit
+	#results.container
