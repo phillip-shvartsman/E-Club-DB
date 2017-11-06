@@ -6,12 +6,15 @@ block content
 	form#addPart
 		div(class="form-group")
 			label(for="inputPartName") Part Name
-			input(type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter Partname")
+			input(type="email" class="form-control" id="partName" aria-describedby="emailHelp" placeholder="Enter Partname")
 		div(class="form-group")
 			label(for="inputQuantity") Quantity
-			input(type="password" class="form-control" id="exampleInputPassword1" placeholder="Quantity")
+			input(type="password" class="form-control" id="quantity" placeholder="Quantity")
+		div(class="form-group")
+			label(for="inputQuantity") Category
+			input(type="text" class="form-control" id="category" placeholder="Category")
 		div(class="form-check")
 			label(class="form-check-label")
 			input(type="checkbox" class="form-check-input")
-		button(id="addPart" type="button" class="btn btn-primary") Submit
+		button(id="submitPart" type="button" class="btn btn-primary") Submit
 	#results.container

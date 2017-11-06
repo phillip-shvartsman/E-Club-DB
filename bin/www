@@ -92,6 +92,10 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+/* EDITING.. */
+
+
 function createAdmin(db)
 {
 	db.createCollection("admin-users",{strict:true},function(err,res){
