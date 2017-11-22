@@ -6,9 +6,7 @@ var apiCall = "https://api.flickr.com/services/feeds/photos_public.gne?id=132038
 
 $(document).ready(function() {
 
-
   $(window).scroll(function() {
-
     if ($(this).scrollTop() > 200) {
       $('.go-top').fadeIn(200);
     } else {
@@ -61,55 +59,45 @@ $(document).ready(function() {
         .wrap("<div>" + "</div>");
     });
   });
-
-
-
-
-
-
-
-
-
 });
-
 
 
 // Calendar
 
 
-$(document).ready(function() {
-  $('#calendar').fullCalendar({
+// $(document).ready(function() {
+//   $('#calendar').fullCalendar({
 
-    defaultView: 'month',
+//     defaultView: 'month',
 
-    views: {
-  listDay: { buttonText: 'month' },
-  listWeek: { buttonText: 'list for this week' }
-},
-    aspectRatio: 1.5,
+//     views: {
+//   listDay: { buttonText: 'month' },
+//   listWeek: { buttonText: 'list for this week' }
+// },
+//     aspectRatio: 1.5,
 
 
-    eventClick: function(event) {
-      // opens events in a popup window
-      window.open(event.url, 'gcalevent', 'width=700,height=600');
-      return false;
-    },
-    header: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'month,listWeek'
-    },
-    contentHeight: '400',
+//     eventClick: function(event) {
+//       // opens events in a popup window
+//       window.open(event.url, 'gcalevent', 'width=700,height=600');
+//       return false;
+//     },
+//     header: {
+//       left: 'prev,next today',
+//       center: 'title',
+//       right: 'month,listWeek'
+//     },
+//     contentHeight: '400',
 
-    eventTextColor: 'white',
+//     eventTextColor: 'white',
 
-    googleCalendarApiKey: 'AIzaSyBu5kL2kgj9AZXCM8kfSLukPx1Vb7bRSh4',
-    events: {
-      googleCalendarId: 'electronicsosu@gmail.com',
-      timezone: 'America/New_York',
-    }
-  });
-});
+//     googleCalendarApiKey: 'AIzaSyBu5kL2kgj9AZXCM8kfSLukPx1Vb7bRSh4',
+//     events: {
+//       googleCalendarId: 'electronicsosu@gmail.com',
+//       timezone: 'America/New_York',
+//     }
+//   });
+// });
 
 
 
@@ -133,3 +121,19 @@ $(document).ready(function() {
 //    //jQuery('#flash').fadeIn(2000);
 //$('#brand img').addClass('animated zoominDown');
 //} );
+
+
+//LOGIN PAGE MODAL
+
+/* #####################################################################
+   #
+   #   Project       : Modal Login with jQuery Effects
+   #   Author        : Rodrigo Amarante (rodrigockamarante)
+   #   Version       : 1.0
+   #   Created       : 07/29/2015
+   #   Last Change   : 08/04/2015
+   #
+   ##################################################################### */
+//    $(document).ready(function() {
+  
+//    });
