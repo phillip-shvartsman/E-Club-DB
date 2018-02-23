@@ -6,6 +6,14 @@ function assignRowClick()
 		$("#invModal").modal('show');
 	});
 };
+function getFormData(formID)
+	{
+		var data = $(formID).serializeArray().reduce(function(obj, item) {
+			obj[item.name] = item.value;
+			return obj;
+		}, {});
+		return data;
+	};
 $(document).ready(function(){
 	$('#invModal').modal(
 	{
@@ -32,4 +40,17 @@ $(document).ready(function(){
             },
         });
 	});
+	 $("#addPart").on("click", function(){
+		var data = getFormData('#add-form');
+		$.ajax({
+            method: "POST",
+            url: "/add",
+            data: data,
+            success: function( res,status ) {
+            },
+            error: function(err,status){
+				alert('Error adding part');
+            },
+        });
+	 });
 });

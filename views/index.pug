@@ -1,6 +1,8 @@
 extends layout
 
 block content
+	div(id="addPartSuccess" class="alert alert-success")
+		<strong>Success!</strong> the part was added.
 	if user
 		div(class="modal fade" id="invModal" value="")
 			div(id="storePart" value="" style="display:none")
@@ -35,20 +37,18 @@ block content
 			form(id="add-form")
 				#input-row.form-row
 					div(class="form-group col")
-						label(for="partName") Part Name
-						input(type="text" name="partName" class="form-control" placeholder="Enter Partname")
+						label(for="category") Category
+						input(type="text" name="cat" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Other")
 					div(class="form-group col")
-						<label for="category">Category</label>
-						<select name="category" class="custom-select mr-sm-2">
-							<option selected>Choose...</option>
-							<option value="consumable">Consumable</option>
-							<option value="ic">IC</option>
-							<option value="micro-controller">Micro-controller</option>
-							<option value="equipment">Equipment</option>
-						</select>
+						label(for="partName") Part Name
+						input(type="text" name="partName" class="form-control" placeholder="Partname")
 					div(class="form-group col")
 						label(for="inputQuantity") Sub-Category
 						input(type="text" name="subCat" class="form-control" placeholder="Sub-category")
+					div(class="form-group col")
+						label(for="value") Value
+						input(type="text" name="val" class="form-control" placeholder="Value")
+				#input-row.form-row
 					div(class="form-group col")
 						label(for="inputQuantity") Part Number
 						input(type="text" name="partNum" class="form-control" placeholder="Part Number")
@@ -59,26 +59,28 @@ block content
 						label(for="qty") Quantity
 						input(type="text" class="form-control" name="qty" placeholder="Quantity")
 				div(class="form-row")
+					div(class="form-group col")
+						label(for="qty") Notes:
+						textarea(class="form-control" rows="5" id="comment" name="notes")
+				div(class="form-row")
 					label(for="inputQuantity")
 					button(id="addPart" type="button" class="btn btn-primary") Add
 	#search-container.container
 		form(id="search-form")
 			#input-row.form-row
 				div(class="form-group col")
-					label(for="partName") Part Name
-					input(type="text" name="partName" class="form-control" placeholder="Enter Partname")
+					label(for="category") Category
+					input(type="text" name="category" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC     Equipment/Other")
 				div(class="form-group col")
-					<label for="category">Category</label>
-					<select name="category" class="custom-select mr-sm-2">
-						<option selected>Choose...</option>
-						<option value="consumable">Consumable</option>
-						<option value="ic">IC</option>
-						<option value="micro-controller">Micro-controller</option>
-						<option value="equipment">Equipment</option>
-					</select>
+					label(for="partName") Part Name
+					input(type="text" name="partName" class="form-control" placeholder="Partname")
 				div(class="form-group col")
 					label(for="inputQuantity") Sub-Category
 					input(type="text" name="subCat" class="form-control" placeholder="Sub-category")
+				div(class="form-group col")
+					label(for="value") Value
+					input(type="text" name="val" class="form-control" placeholder="Value")
+			#input-row.form-row
 				div(class="form-group col")
 					label(for="inputQuantity") Part Number
 					input(type="text" name="partNum" class="form-control" placeholder="Part Number")

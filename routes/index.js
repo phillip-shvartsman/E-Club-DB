@@ -49,7 +49,6 @@ router.get('/', function(req, res, next) {
 });
 router.post('/search', function(req, res, next){
 	console.log("We got a search request!");
-	
 	var query = createSearchQuery(req);
 	console.log(query);
 	mongoClient.connect(db_url,function(err,db){
@@ -67,13 +66,12 @@ router.post('/add', function(req, res, next){
 	var subCat = req.body.subCat;
 	var partNum = req.body.partNum;
 	var loc = req.body.loc;
+	var val = req.body.val;
 	var qty = req.body.qty;
-	if(cat==null)
-	{
-		cat = "";
-	}
+	var notes = req.body.notes
+	console.log(req.body);
 	mongoClient.connect(db_url,function(err,db){
-		db.collection('inventory').insert({partName:partName,cat:cat,subCat:subCat,partNum:partNum,loc:loc,qty:qty,amountCheckedOut:0});
+		db.collection('inventory').insert({partName:partName,cat:cat,subCat:subCat,partNum:partNum,loc:loc,qty:qty,amountCheckedOut:0,val:val,notes:notes});
 		db.close;
 		res.end();
 	});
@@ -95,21 +93,19 @@ router.post('/delete', function(req, res, next){
 });
 function createSearchQuery(req)
 {
-	if(req.body.cat==null)
-	{
-		req.body.cat = "";
-	}
 	var partName = new RegExp('.*'+req.body.partName+'.*');
 	var cat = new RegExp('.*'+req.body.cat+'.*');
 	var subCat = new RegExp('.*'+req.body.subCat+'.*');
 	var partNum = new RegExp('.*'+req.body.partNum+'.*');
 	var loc = new RegExp('.*'+req.body.loc+'.*');
+	var val = new RegExp('.*'+req.body.val+'.*');
 	return {
 			partName:partName,
-			//cat:cat,
+			cat:cat,
 			subCat:subCat,
 			partNum:partNum,
-			loc:loc
+			loc:loc,
+			val:val
 			}
 }
 

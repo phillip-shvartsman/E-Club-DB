@@ -1,14 +1,19 @@
 $(document).ready(function(){
+	$(function () {
+		$('[data-toggle="tooltip"]').tooltip()
+	})
 	function addToResults(result)
 	{
 		$('#results-container').append("<div class='row result-row' value="+result._id+">"+
 		"<div class='col'>"+result.partName+"</div>"+
 		"<div class='col'>"+result.cat+"</div>"+
 		"<div class='col'>"+result.subCat+"</div>"+
+		"<div class='col'>"+result.val+"</div>"+
 		"<div class='col'>"+result.partNum+"</div>"+
 		"<div class='col'>"+result.loc+"</div>"+
 		"<div class='col'>"+result.qty+"</div>"+
 		"<div class='col'>"+result.amountCheckedOut+"</div>"+
+		"<div class='col'>"+result.notes+"</div>"+
 		"</div>");
 	}
 	function getFormData(formID)
@@ -17,10 +22,6 @@ $(document).ready(function(){
 			obj[item.name] = item.value;
 			return obj;
 		}, {});
-		if(data['category']=='Choose...')
-		{
-			data['category'] = "";
-		}
 		return data;
 	}
 	$("#show-login").on('click',function(){
@@ -55,22 +56,7 @@ $(document).ready(function(){
             },
         });
     });
-     $("#addPart").on("click", function(){
-		
-		var data = getFormData('#add-form');
-		alert(data);
-		$.ajax({
-            method: "POST",
-            url: "/add",
-            data: data,
-            success: function( res,status ) {
-				alert('Added Part');
-            },
-            error: function(err,status){
-				alert('Error adding part');
-            },
-        });
-	 });
+    
 	function assignMouseEvents()
 	{
 		$(".result-row").on('mouseenter',function(){
