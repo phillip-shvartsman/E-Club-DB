@@ -1,21 +1,35 @@
+function assignRowClick()
+{
+	$('.result-row').on("click",function(){
+		uniq_id = $(this).attr('value')
+		$("#storePart").attr('value',uniq_id)
+		$("#invModal").modal('show');
+	});
+};
 $(document).ready(function(){
-    $("#submitPart").on("click", function(){
-        alert("test");
-        $.ajax({
+	$('#invModal').modal(
+	{
+		keyboard:true,
+		show:false,
+		focus:false
+	}
+	)
+	$('#delete-button').on('click',function(){
+		uniq_id = $("#storePart").attr('value');
+		$.ajax({
             method: "POST",
-            url: "/add",
+            url: "/delete",
             data: {
-                partName:"Raspberry Pi" , 
-                quantity: "4" , 
-                category: "MCU"  
-            },
+				id : uniq_id
+			},
             success: function( res,status ) {
-                alert( res );
+				$("#storePart").attr('value',"");
+				$("[value="+uniq_id+"]").remove();
+				$("#invModal").modal('hide');
             },
             error: function(err,status){
-                alert(err);
+				alert('Error deleting part');
             },
         });
-    });
-    
-})
+	});
+});

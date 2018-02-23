@@ -1,20 +1,91 @@
 extends layout
 
 block content
+	if user
+		div(class="modal fade" id="invModal" value="")
+			div(id="storePart" value="" style="display:none")
+			div(class="modal-dialog")
+				div(class="modal-content")
+					div(class="modal-header")
+						h4(class="modal-title") What do you want to do with this part?
+						button(type="button" class="close" data-dismiss="modal")
+					div(class="modal-body")
+						button(type="button" id="update-button" class="btn btn-primary") Update
+						button(type="button" id="check-out-button" class="btn btn-info") Check-Out
+						button(type="button" id="check-in-button" class="btn btn-success") Check-In
+						button(type="button" id="delete-button" class="btn btn-danger") Delete
+	if !user
+		button(id="show-login" type="button" class="btn btn-primary") Login for officers
+		div(class="container" style="display:none" id="login-container")
+			form(id="login-form" action="/login" method="post")
+				#login-row.form-row
+					div(class="form-group col")
+						label(for="username") Username
+						input(type="text" class="form-control" id="username" name="username" placeholder="Username")
+					div(class="form-group col")
+						label(for="password") Password
+						input(type="password" class="form-control" id="password" name="password" placeholder="Password")
+					div(class="form-row")
+						label(for="login")
+						button(id="login" type="submit" class="btn btn-primary") Login
 	h1= title
 	p Welcome to #{title}
-	form#addPart
-		div(class="form-group")
-			label(for="inputPartName") Part Name
-			input(type="email" class="form-control" id="partName" aria-describedby="emailHelp" placeholder="Enter Partname")
-		div(class="form-group")
-			label(for="inputQuantity") Quantity
-			input(type="password" class="form-control" id="quantity" placeholder="Quantity")
-		div(class="form-group")
-			label(for="inputQuantity") Category
-			input(type="text" class="form-control" id="category" placeholder="Category")
-		div(class="form-check")
-			label(class="form-check-label")
-			input(type="checkbox" class="form-check-input")
-		button(id="submitPart" type="button" class="btn btn-primary") Submit
-	#results.container
+	if user
+		#add-container.container
+			form(id="add-form")
+				#input-row.form-row
+					div(class="form-group col")
+						label(for="partName") Part Name
+						input(type="text" name="partName" class="form-control" placeholder="Enter Partname")
+					div(class="form-group col")
+						<label for="category">Category</label>
+						<select name="category" class="custom-select mr-sm-2">
+							<option selected>Choose...</option>
+							<option value="consumable">Consumable</option>
+							<option value="ic">IC</option>
+							<option value="micro-controller">Micro-controller</option>
+							<option value="equipment">Equipment</option>
+						</select>
+					div(class="form-group col")
+						label(for="inputQuantity") Sub-Category
+						input(type="text" name="subCat" class="form-control" placeholder="Sub-category")
+					div(class="form-group col")
+						label(for="inputQuantity") Part Number
+						input(type="text" name="partNum" class="form-control" placeholder="Part Number")
+					div(class="form-group col")
+						label(for="inputQuantity") Location
+						input(type="text" class="form-control" name="loc" placeholder="Location")
+					div(class="form-group col")
+						label(for="qty") Quantity
+						input(type="text" class="form-control" name="qty" placeholder="Quantity")
+				div(class="form-row")
+					label(for="inputQuantity")
+					button(id="addPart" type="button" class="btn btn-primary") Add
+	#search-container.container
+		form(id="search-form")
+			#input-row.form-row
+				div(class="form-group col")
+					label(for="partName") Part Name
+					input(type="text" name="partName" class="form-control" placeholder="Enter Partname")
+				div(class="form-group col")
+					<label for="category">Category</label>
+					<select name="category" class="custom-select mr-sm-2">
+						<option selected>Choose...</option>
+						<option value="consumable">Consumable</option>
+						<option value="ic">IC</option>
+						<option value="micro-controller">Micro-controller</option>
+						<option value="equipment">Equipment</option>
+					</select>
+				div(class="form-group col")
+					label(for="inputQuantity") Sub-Category
+					input(type="text" name="subCat" class="form-control" placeholder="Sub-category")
+				div(class="form-group col")
+					label(for="inputQuantity") Part Number
+					input(type="text" name="partNum" class="form-control" placeholder="Part Number")
+				div(class="form-group col")
+					label(for="inputQuantity") Location
+					input(type="text" class="form-control" name="loc" placeholder="Location")
+			div(class="form-row")
+				label(for="inputQuantity")
+				button(id="searchPart" type="button" class="btn btn-primary") Search
+	#results-container.container
