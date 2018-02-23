@@ -9,3 +9,6 @@ a {
 .id_col {
 	display:none;
 }
+.header-row{
+	border-style: solid;
+}

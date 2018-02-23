@@ -41,8 +41,8 @@ router.get('/', function(req, res, next) {
 	var inventory_res;
 	mongoClient.connect(db_url,function(err,db){
 		inventory_res = db.collection('inventory').find().toArray(function(err,docs){
-			res.render('index', { title: 'Electronics Club @ OSU', user:req.user});
 			db.close();
+			res.render('index', { title: 'Electronics Club @ OSU', user:req.user});
 		});; 	
 	});
 	//res.sendFile(path.join(__dirname+'/old-site/index.html'));
@@ -83,22 +83,51 @@ router.post('/login',
   });
 router.post('/delete', function(req, res, next){
 	console.log("We got an delete request!");
-	var id = new ObjectID(req.body.id);
-	console.log(id);
+	var _id = new ObjectID(req.body._id);
+	console.log(_id);
 	mongoClient.connect(db_url,function(err,db){
-		db.collection('inventory').remove({_id:id});
+		db.collection('inventory').remove({_id:_id});
 		db.close;
+		res.end();
+	});
+});
+router.post('/modify',function(req,res,next){
+	var _id = new ObjectID(req.body._id);
+	cat = req.body.cat;
+	partName = req.body.partName;
+	subCat = req.body.subCat;
+	val = req.body.val;
+	partNum = req.body.partNum;
+	loc = req.body.loc;
+	qty = req.body.qty;
+	notes = req.body.notes;
+	mongoClient.connect(db_url,function(err,db){
+		db.collection('inventory').update({_id:_id},{$set:{
+			cat : cat,
+			partName : partName,
+			subCat : subCat,
+			val : val,
+			partNum : partNum,
+			loc : loc,
+			qty : qty,
+			notes : notes
+		}});
+		db.close();
 		res.end();
 	});
 });
 function createSearchQuery(req)
 {
-	var partName = new RegExp('.*'+req.body.partName+'.*');
-	var cat = new RegExp('.*'+req.body.cat+'.*');
-	var subCat = new RegExp('.*'+req.body.subCat+'.*');
-	var partNum = new RegExp('.*'+req.body.partNum+'.*');
-	var loc = new RegExp('.*'+req.body.loc+'.*');
-	var val = new RegExp('.*'+req.body.val+'.*');
+	if(req.body.cat==undefined||req.body.cat==null)
+	{
+		req.body.cat = "";
+	}
+	var partName = new RegExp('.*'+req.body.partName+'.*','i');
+	var cat = new RegExp('.*'+req.body.cat+'.*','i');
+	var subCat = new RegExp('.*'+req.body.subCat+'.*','i');
+	var partNum = new RegExp('.*'+req.body.partNum+'.*','i');
+	var loc = new RegExp('.*'+req.body.loc+'.*','i');
+	var val = new RegExp('.*'+req.body.val+'.*','i');
 	return {
 			partName:partName,
 			cat:cat,

@@ -98,17 +98,16 @@ function onListening() {
 
 function createAdmin(db)
 {
-	db.createCollection("admin-users",{strict:true},function(err,res){
+	db.createCollection("admin",{strict:true},function(err,res){
 		if(err)
 		{
 			console.log(err);
-			db.close();
 		}
 		else
 		{
 			console.log("Admin collection created!");
 		}
-		db.close();
+		createCheckOut(db);
 	});
 }
 function createInventory(db)
@@ -123,6 +122,20 @@ function createInventory(db)
 			console.log("inventory collection created");
 		}
 		createAdmin(db);
+	});
+}
+function createCheckOut(db)
+{
+	db.createCollection("check-out",{strict:true},function(err,res){
+		if(err)
+		{
+			console.log(err);
+		}
+		else
+		{
+			console.log("Checkout created collection created!");
+		}
+		db.close;
 	});
 }
 db.connect(db_url,function(err,db){

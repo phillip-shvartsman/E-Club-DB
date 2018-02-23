@@ -4,7 +4,7 @@ $(document).ready(function(){
 	})
 	function addToResults(result)
 	{
-		$('#results-container').append("<div class='row result-row' value="+result._id+">"+
+		$('#results-container').append("<div class='row result-row' value='"+JSON.stringify(result)+"'>"+
 		"<div class='col'>"+result.partName+"</div>"+
 		"<div class='col'>"+result.cat+"</div>"+
 		"<div class='col'>"+result.subCat+"</div>"+
@@ -14,6 +14,7 @@ $(document).ready(function(){
 		"<div class='col'>"+result.qty+"</div>"+
 		"<div class='col'>"+result.amountCheckedOut+"</div>"+
 		"<div class='col'>"+result.notes+"</div>"+
+		"<div class='col result-save' style='display:none'></div>"+
 		"</div>");
 	}
 	function getFormData(formID)
@@ -60,11 +61,34 @@ $(document).ready(function(){
 	function assignMouseEvents()
 	{
 		$(".result-row").on('mouseenter',function(){
-			$(this).css('background-color', 'red');
+			$(this).css('background-color', 'grey');
 		});
 		$(".result-row").on('mouseleave',function(){
 			$(this).css('background-color', 'transparent');
 		});
 	}
-	
+	$('#search-tab').on('click',function(){
+		if(!$(this).hasClass('active'))
+		{
+				$('#check-out-container').fadeOut('fast',function(){
+					$('#search-container').fadeIn('fast',function(){
+						
+					});
+				});
+				$('#top-nav').find('.active').removeClass('active');
+				$('#top-nav').find('#search-tab').addClass('active');
+		}
+	});
+	$('#check-out-tab').on('click',function(){
+		if(!$(this).hasClass('active'))
+		{
+				$('#search-container').fadeOut('fast',function(){
+					$('#check-out-container').fadeIn('fast',function(){
+						
+					});
+				});
+				$('#top-nav').find('.active').removeClass('active');
+				$('#top-nav').find('#check-out-tab').addClass('active');
+		}
+	});
 });
