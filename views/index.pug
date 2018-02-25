@@ -3,14 +3,8 @@ extends layout
 block content
 	h1= title
 	p Welcome to #{title}
-	div(id="addPartSuccess" class="alert alert-success" style="display:none; position:fixed;")
-		<strong>Success!</strong> the part was added.
-	div(id="modifyPartSuccess" class="alert alert-info" style="display:none; position:fixed;")
-		<strong>Success!</strong> the part was modified.
-	div(id="deletePartSuccess" class="alert alert-success" style="display:none; position:fixed;")
-		<strong>Success!</strong> the part was deleted.
-	div(id="addCheckOutSuccess" class="alert alert-success" style="display:none; position:fixed;")
-		<strong>Success!</strong> the check out was added.
+	div(id="successFlash" class="alert alert-success" style="display:none; z-index:500; position:fixed;")
+	div(id="errorFlash" class="alert alert-danger" style="display:none; z-index:500; position:fixed;")
 	if !user
 		button(id="show-login" type="button" class="btn btn-primary") Login for officers
 		div(class="container" style="display:none" id="login-container")
@@ -25,7 +19,10 @@ block content
 				div(class="form-row")
 					label(for="login")
 					button(id="login" type="submit" class="btn btn-primary") Login
-		
+	if user
+		div(class="form-row")
+					label(for="logout")
+					button(id="logout" type="button" class="btn btn-primary") Logout
 	ul(class="nav nav-tabs justify-content-center" id="top-nav")
 		li(class="nav-item")
 			a(class="nav-link active" href="#" id='search-tab') Search
@@ -78,11 +75,11 @@ block content
 			form(id="add-form")
 				#input-row.form-row
 					div(class="form-group col")
-						label(for="category") Category
-						input(type="text" name="cat" class='add-form-input' class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Other")
-					div(class="form-group col")
 						label(for="partName") Part Name
 						input(type="text" name="partName" class='add-form-input' class="form-control" placeholder="Partname")
+					div(class="form-group col")
+						label(for="category") Category
+						input(type="text" name="cat" class='add-form-input' class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Other")
 					div(class="form-group col")
 						label(for="inputQuantity") Sub-Category
 						input(type="text" name="subCat" class='add-form-input' class="form-control" placeholder="Sub-category")
@@ -107,33 +104,30 @@ block content
 					label(for="inputQuantity")
 					button(id="addPart" type="button" class="m-3 btn btn-primary") Add
 					label(for="clearAddPart")
-					button(id="clearAddPart" type="button" class="m-3 btn btn-info") Clear
+					button(id="clearAddPart" type="button" class="m-3 btn btn-info") Clear/Get All
 		if !user
 			#search-form-container.container.mt-3
 				form(id="search-form" class="mb-3")
 					#input-row.form-row
 						div(class="form-group col")
 							label(for="category") Category
-							input(type="text" name="cat" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC     Equipment/Other")
+							input(type="text" name="cat" class="form-control no-login-input" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC     Equipment/Other")
 						div(class="form-group col")
 							label(for="partName") Part Name
-							input(type="text" name="partName" class="form-control" placeholder="Partname")
+							input(type="text" name="partName" class="form-control no-login-input" placeholder="Partname")
 						div(class="form-group col")
 							label(for="inputQuantity") Sub-Category
-							input(type="text" name="subCat" class="form-control" placeholder="Sub-category")
+							input(type="text" name="subCat" class="form-control no-login-input" placeholder="Sub-category")
 						div(class="form-group col")
 							label(for="value") Value
-							input(type="text" name="val" class="form-control" placeholder="Value")
+							input(type="text" name="val" class="form-control no-login-input" placeholder="Value")
 					#input-row.form-row
 						div(class="form-group col")
 							label(for="inputQuantity") Part Number
-							input(type="text" name="partNum" class="form-control" placeholder="Part Number")
+							input(type="text" name="partNum" class="form-control no-login-input" placeholder="Part Number")
 						div(class="form-group col")
 							label(for="inputQuantity") Location
-							input(type="text" class="form-control" name="loc" placeholder="Location")
-					div(class="form-row")
-						label(for="inputQuantity")
-						button(id="searchPart" type="button" class="btn btn-primary") Search
+							input(type="text" class="form-control no-login-input" name="loc" placeholder="Location")
 		table(class="table table-sm")
 			thead
 				tr
@@ -186,11 +180,11 @@ block content
 			form(id="check-out-search-form" class="mb-3")
 				#input-row.form-row
 					div(class="form-group col")
-						label(for="category") Category
-						input(type="text" id="check-out-cat" name="cat" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC     Equipment/Other")
-					div(class="form-group col")
 						label(for="partName") Part Name
 						input(type="text" id="check-out-partName" name="partName" class="form-control" placeholder="Partname")
+					div(class="form-group col")
+						label(for="category") Category
+						input(type="text" id="check-out-cat" name="cat" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC     Equipment/Other")
 					div(class="form-group col")
 						label(for="inputQuantity") Sub-Category
 						input(type="text" id="check-out-subCat" name="subCat" class="form-control" placeholder="Sub-category")
@@ -236,10 +230,20 @@ block content
 				tbody(id='current-check-out')
 			h5 3. Once satisfied click add check out to finalize.
 			div(class="form-row")
-					label(for="addCheckOut")
 					button(id="addCheckOutButton" type="button" class="btn btn-primary") Add Check Out
 		if !user
 			h5(class="my-2") Enter Your Name and Dot Number to see your current check out.
+			form(id="check-check-out-form" class="mb-3")
+				#input-row.form-row
+					div(class="form-group col")
+						label(for="lname") Last Name
+						input(type="text" name="lname" class="form-control" placeholder="Last Name")
+					div(class="form-group col")
+						label(for="dNum") Dot #
+						input(type="number" name="dNum" class="form-control" placeholder="Dot #")
+				div(class="form-row")
+					button(id="check-check-out-button" type="button" class="btn btn-primary") Search
+			div(id='your-check-out')
 		if user
 			h3(class="my-2") All Checkouts
 				h5 (Hitting a plus on a checkout will add the current check-out to it)

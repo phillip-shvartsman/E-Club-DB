@@ -69,11 +69,11 @@ router.get('/', function(req, res, next) {
 router.post('/search', function(req, res, next){
 	console.log("We got a search request!");
 	var query = createSearchQuery(req);
-	console.log(query);
+	//console.log(query);
 	db.collection('inventory').find(query).limit(100).toArray(function(err,results){
 			if(err) throw err;
 			db.close;
-			console.log(results);
+			//console.log(results);
 			res.send(results);
 			
 	}); 
@@ -84,6 +84,8 @@ router.post('/add', function(req, res, next){
 	db.collection('inventory').insert(req.body).then(function(result){
 		db.close;
 		res.end();
+	}).catch(function(err){
+		console.log(err);
 	});
 });
 router.post('/delete', function(req, res, next){
@@ -92,15 +94,19 @@ router.post('/delete', function(req, res, next){
 	db.collection('inventory').remove({_id:_id}).then(function(){
 		db.close;
 		res.end();
+	}).catch(function(err){
+		console.log(err);
 	});
 });
 router.post('/modify',function(req,res,next){
 	var _id = new ObjectID(req.body._id);
 	delete req.body._id;
 	db.collection('inventory').update({_id:_id},{$set:req.body}).then(function(result){
-		db.close();
-		res.end();
-	});
+			db.close;
+			res.end();
+	}).catch(function(error) {
+		console.log(error);
+	});;
 });
 router.post('/get-check-outs',function(req,res,next){
 	console.log('We got a check-out request');
@@ -116,7 +122,6 @@ router.post('/add-check-out',function(req,res,next){
 	var _id;
 	var data;
 	req.body['checkedIn'] = false;
-	
 	var store = req.body;
 	var strip_result =  Object.assign({},req.body);
 	delete strip_result['fname'];
@@ -126,7 +131,7 @@ router.post('/add-check-out',function(req,res,next){
 	delete strip_result['fNum'];
 	delete strip_result['checkedIn'];
 	delete strip_result['lname'];
-	console.log(strip_result);
+	//console.log(strip_result);
 	var keys= Object.keys(strip_result);
 	var index = 0;
 	var size = keys.length-1;
@@ -137,28 +142,29 @@ function incParts(res,store,keys,index,size)
 	data = JSON.parse(store[keys[index]]);
 	console.log(store);
 	_id = new ObjectID(keys[index]);
-	if(size==index)
-	{
-		db.collection('inventory').update({_id:_id},{$inc:{amountCheckedOut:parseInt(data['amountToCheckOut'],10)}}).then(function(result){
+	db.collection('inventory').update({_id:_id},{$inc:{amountCheckedOut:parseInt(data['amountToCheckOut'],10)}}).then(function(result){
+		if(size==index)
+		{
 			db.collection('checkOut').insert(store).then(function(){
 					db.close;
 					res.end();
+				}).catch(function(error) {
+					console.log(error);
 				});
+		}
+		else
+		{
+				index = index + 1;
+				incParts(res,store,keys,index,size);
+		}
+	}).catch(function(error) {
+			console.log(error);
 		});
-	}
-	else
-	{
-		db.collection('inventory').update({_id:_id},{$inc:{amountCheckedOut:parseInt(data['amountToCheckOut'],10)}}).then(function(result){
-			index = index + 1;
-			incParts(res,store,keys,index,size);
-		});
-	}
 }
 router.post('/check-in-all',function(req,res,next){
 	var checkOut_id = new ObjectID(req.body._id); //ID of the whole checkout
 	var part_id; //ID of a single part
 	db.collection('checkOut').find({_id:checkOut_id}).toArray().then(function(result){
-		
 		if(result.length==0)
 		{
 			console.log('Bad ID for check in');
@@ -167,79 +173,97 @@ router.post('/check-in-all',function(req,res,next){
 		}
 		else
 		{
-		store = Object.assign({},result[0]);
-		strip_result = Object.assign({},result[0]);
-		
-		delete strip_result['fname'];
-		delete strip_result['dateDue'];
-		delete strip_result['_id'];
-		delete strip_result['dNum'];
-		delete strip_result['fNum'];
-		delete strip_result['checkedIn'];
-		delete strip_result['lname'];
-		var keys = Object.keys(strip_result);
-		var size = keys.length-1;
-		var index = 0;
-		decParts(res,store,keys,index,size,checkOut_id);
+			store = Object.assign({},result[0]);
+			strip_result = Object.assign({},result[0]);
+			
+			delete strip_result['fname'];
+			delete strip_result['dateDue'];
+			delete strip_result['_id'];
+			delete strip_result['dNum'];
+			delete strip_result['fNum'];
+			delete strip_result['checkedIn'];
+			delete strip_result['lname'];
+			var keys = Object.keys(strip_result);
+			var size = keys.length-1;
+			console.log(result[0]);
+			var index = 0;
+			decParts(res,store,keys,index,size,checkOut_id);
 		}
+	}).catch(function(error) {
+		console.log(error);
 	});
 });
 function decParts(res,store,keys,index,size,checkOut_id){
 	part_id = new ObjectID(keys[index]);
 	data = JSON.parse(store[keys[index]]);
-	if(size==index)
-	{
-		db.collection('checkOut').update({_id:checkOut_id},{$set:{checkedIn:true}}).then(function(result){
-			db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
+	db.collection('inventory').update({_id:part_id},{$inc:{amountCheckedOut:-1*parseInt(data['amountToCheckOut'],10)}}).then(function(result){	
+		if(size==index)
+		{
+			db.collection('checkOut').remove({_id:checkOut_id}).then(function(results){
+				db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
 				if(err) throw err;
 					db.close;
 					//console.log(results);
 					res.send(results);
+				});
+			}).catch(function(err){
+				console.log(err);
 			});
-		});
-	}
-	else
-	{
-		db.collection('inventory').update({_id:part_id},{$inc:{amountCheckedOut:-1*parseInt(data['amountToCheckOut'],10)}}).then(function(result){
+		}
+		else
+		{
 			index = index + 1;
 			decParts(res,store,keys,index,size,checkOut_id);
-		});
-	}
+		}
+	})
+	.catch(function(err){
+		console.log(err);
+	});
 };
 router.post('/add-part-post-check-out',function(req,res,next){
 	var checkOut_id = new ObjectID(req.body.checkOut_id);
-	parts = req.body;
-	var part_id;
+	parts = Object.assign({},req.body);
 	delete parts['checkOut_id'];
-	var size = Object.keys(parts).length;
-	var index = 1;
-	for(var key in parts)
-	{
-		part_id = new ObjectID(key);
-		data = JSON.parse(parts[key]);
-		db.collection('inventory').update({_id:part_id},{$inc:{amountCheckedOut:parseInt(data['amountToCheckOut'],10)}}).then(function(result){
-			query = {};
-			query[key] = parts[key];
-			console.log(index);
-					console.log(size);
-			db.collection('checkOut').update({_id:checkOut_id},{$set:query}).then(function(result){
-				if(index == size)
-				{
-					db.collection('checkOut').find({$query:{checkedIn:false},$orderby:{fName:1}}).toArray(function(err, result) { //Send the results back
-						res.send(result);
-						db.close();
-					});
-				}
-				else
-				{
-					index = index + 1;
-					return Promise.resolve(db);
-				}
+	var keys = Object.keys(parts);
+	var size = keys.length-1;
+	var index = 0;
+	addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id);	
+});
+function addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id)
+{
+	var part_id;
+	var data;
+	part_id = new ObjectID(keys[index]);
+	data = JSON.parse(parts[keys[index]]);
+	db.collection('inventory').update({_id:part_id},{$inc:{amountCheckedOut:parseInt(data['amountToCheckOut'],10)}}).then(function(result){
+		var query = {};
+		query[keys[index]] = parts[keys[index]];
+		db.collection('checkOut').update({_id:checkOut_id},{$set:query}).then(function(result){
+			if(index == size)
+			{
+				db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
+				if(err) throw err;
+					db.close;
+					//console.log(results);
+					res.send(results);
 				});
-				
-			});
-			
-	}
+			}
+			else
+			{
+				index = index + 1;
+				addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id);
+			}
+		})
+		.catch(function(err){
+			console.log(err);
+		});
+	}).catch(function(err){
+		console.log(err);
+	});
+};
+router.get('/logout',function(req,res,next){
+	req.logout();
+    res.redirect('/');
 });
 router.post('/check-in-part',function(req,res,next){
 	var part_id = new ObjectID(req.body.part_id);
@@ -263,14 +287,29 @@ router.post('/check-in-part',function(req,res,next){
 			var unset = {}; //USEFUL TRICK TURN string value into key
 			unset[part_id_str]="";
 			db.collection('checkOut').update({_id:checkOut_id},{$unset:unset}).then(function(results){
-				db.collection('checkOut').find({$query:{checkedIn:false},$orderby:{fName:1}}).toArray().then(function(result){ //Send the results back
-					res.send(result);
-					db.close();
+				db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
+				if(err) throw err;
+					db.close;
+					//console.log(results);
+					res.send(results);
 				});
+			}).catch(function(err){
+				console.log('Error removing part of checkout');
+				console.log(err);
 			});
-			
+		}).catch(function(err){
+			console.log('Error modifying the amount check out when checking in a part')
+			console.log(err);
 		});
-		
+	});
+});
+router.post('/check-check-out',function(req,res,next){
+	var query = createSearchCheckOut(req);
+	db.collection('checkOut').find(query).toArray(function(err,results){
+	if(err) throw err;
+		db.close;
+		//console.log(results);
+		res.send(results[0]);
 	});
 });
 function createSearchQuery(req)
@@ -292,6 +331,16 @@ function createSearchQuery(req)
 			partNum:partNum,
 			loc:loc,
 			val:val
+			}
+}
+function createSearchCheckOut(req)
+{
+	var lname = req.body['lname'];
+	var dNum = req.body['dNum'];
+	var lname = new RegExp(lname,'i');
+	return {dNum : dNum,
+			lname:lname,
+			checkedIn:false
 			}
 }
 function createAdmin()
