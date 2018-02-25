@@ -1,6 +1,5 @@
 body {
   padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
 a {
@@ -11,4 +10,17 @@ a {
 }
 .header-row{
 	border-style: solid;
+}
+.hide-overflow{
+	overflow:hidden;
+}
+.hide-overflow:hover{
+	overflow:visible;
+	height:auto;
+}
+.check-box-all,.check-box-part,.plus-box{
+	cursor:pointer;
+	padding:5px;
+	margin-left:10px;
+	margin-right:10px;
 }

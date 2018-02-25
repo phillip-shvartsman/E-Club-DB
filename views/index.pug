@@ -9,6 +9,8 @@ block content
 		<strong>Success!</strong> the part was modified.
 	div(id="deletePartSuccess" class="alert alert-success" style="display:none; position:fixed;")
 		<strong>Success!</strong> the part was deleted.
+	div(id="addCheckOutSuccess" class="alert alert-success" style="display:none; position:fixed;")
+		<strong>Success!</strong> the check out was added.
 	if !user
 		button(id="show-login" type="button" class="btn btn-primary") Login for officers
 		div(class="container" style="display:none" id="login-container")
@@ -20,14 +22,15 @@ block content
 					div(class="form-group col")
 						label(for="password") Password
 						input(type="password" class="form-control" id="password" name="password" placeholder="Password")
-					div(class="form-row")
-						label(for="login")
-						button(id="login" type="submit" class="btn btn-primary") Login
+				div(class="form-row")
+					label(for="login")
+					button(id="login" type="submit" class="btn btn-primary") Login
+		
 	ul(class="nav nav-tabs justify-content-center" id="top-nav")
 		li(class="nav-item")
 			a(class="nav-link active" href="#" id='search-tab') Search
 		li(class="nav-item")
-			a(class="nav-link" href="#" id="check-out-tab") Check-out
+			a(class="nav-link" href="#" id="check-out-tab") Check-outs
 	#search-container.container
 		if user
 			div(class="modal fade" id="invModal" value="")
@@ -72,13 +75,46 @@ block content
 							div(class="form-row")
 								label(for="inputQuantity")
 								button(id="modifyPart" type="button" class="btn btn-primary") Save
-		if user
-			#add-container.container.mt-3
-				form(id="add-form")
+			form(id="add-form")
+				#input-row.form-row
+					div(class="form-group col")
+						label(for="category") Category
+						input(type="text" name="cat" class='add-form-input' class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Other")
+					div(class="form-group col")
+						label(for="partName") Part Name
+						input(type="text" name="partName" class='add-form-input' class="form-control" placeholder="Partname")
+					div(class="form-group col")
+						label(for="inputQuantity") Sub-Category
+						input(type="text" name="subCat" class='add-form-input' class="form-control" placeholder="Sub-category")
+					div(class="form-group col")
+						label(for="value") Value
+						input(type="text" name="val" class='add-form-input' class="form-control" placeholder="Value")
+				#input-row.form-row
+					div(class="form-group col")
+						label(for="inputQuantity") Part Number
+						input(type="text" name="partNum" class='add-form-input' class="form-control" placeholder="Part Number")
+					div(class="form-group col")
+						label(for="inputQuantity") Location
+						input(type="text" class="form-control" class='add-form-input' name="loc" placeholder="Location")
+					div(class="form-group col")
+						label(for="qty") Quantity
+						input(type="text" class="form-control" name="qty" placeholder="Quantity")
+				div(class="form-row")
+					div(class="form-group col")
+						label(for="qty") Notes:
+						textarea(class="form-control" rows="5" id="comment" name="notes")
+				div(class="form-row")
+					label(for="inputQuantity")
+					button(id="addPart" type="button" class="m-3 btn btn-primary") Add
+					label(for="clearAddPart")
+					button(id="clearAddPart" type="button" class="m-3 btn btn-info") Clear
+		if !user
+			#search-form-container.container.mt-3
+				form(id="search-form" class="mb-3")
 					#input-row.form-row
 						div(class="form-group col")
 							label(for="category") Category
-							input(type="text" name="cat" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Other")
+							input(type="text" name="cat" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC     Equipment/Other")
 						div(class="form-group col")
 							label(for="partName") Part Name
 							input(type="text" name="partName" class="form-control" placeholder="Partname")
@@ -95,55 +131,40 @@ block content
 						div(class="form-group col")
 							label(for="inputQuantity") Location
 							input(type="text" class="form-control" name="loc" placeholder="Location")
-						div(class="form-group col")
-							label(for="qty") Quantity
-							input(type="text" class="form-control" name="qty" placeholder="Quantity")
-					div(class="form-row")
-						div(class="form-group col")
-							label(for="qty") Notes:
-							textarea(class="form-control" rows="5" id="comment" name="notes")
 					div(class="form-row")
 						label(for="inputQuantity")
-						button(id="addPart" type="button" class="btn btn-primary") Add
-		#search-form-container.container.mt-3
-			form(id="search-form" class="mb-3")
-				#input-row.form-row
-					div(class="form-group col")
-						label(for="category") Category
-						input(type="text" name="cat" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC     Equipment/Other")
-					div(class="form-group col")
-						label(for="partName") Part Name
-						input(type="text" name="partName" class="form-control" placeholder="Partname")
-					div(class="form-group col")
-						label(for="inputQuantity") Sub-Category
-						input(type="text" name="subCat" class="form-control" placeholder="Sub-category")
-					div(class="form-group col")
-						label(for="value") Value
-						input(type="text" name="val" class="form-control" placeholder="Value")
-				#input-row.form-row
-					div(class="form-group col")
-						label(for="inputQuantity") Part Number
-						input(type="text" name="partNum" class="form-control" placeholder="Part Number")
-					div(class="form-group col")
-						label(for="inputQuantity") Location
-						input(type="text" class="form-control" name="loc" placeholder="Location")
-				div(class="form-row")
-					label(for="inputQuantity")
-					button(id="searchPart" type="button" class="btn btn-primary") Search
-		#results-header.container
-			#header.row.header-row
-				#header-partname.col Part Name
-				#header-category.col Category
-				#header-subcat.col Sub-Category
-				#header-value.col Value
-				#header-partnumb.col Part Num.
-				#header-loc.col Location
-				#header-qty.col Qty.
-				#header-check.col # Checked Out
-				#header-check.col Notes
-		#results-container.container
-	div(class="container" id="check-out-container" style="display:none")
+						button(id="searchPart" type="button" class="btn btn-primary") Search
+		table(class="table table-sm")
+			thead
+				tr
+					th Part Name
+					th Category
+					th Sub-Category
+					th Value
+					th Part #
+					th Location
+					th Qty.
+					th # Checked Out
+					th Notes
+			tbody(id='search-table-body')
+	div( class="container" id="check-out-container" style="display:none")
 		if user
+			div(class="modal fade" id="qtyModal")
+				div(id="checkOutStorePart" value="" style="display:none")
+				div(class="modal-dialog")
+					div(class="modal-content")
+						div(class="modal-header")
+							h4(class="modal-title") Select amount to check Out
+							button(type="button" class="close" data-dismiss="modal")
+						form(id="quantity-form")
+							div(class="form-group col")
+								label(for="amountCheckedOut") Quantity
+								input(type="number" name="amountToCheckOut" class="form-control" placeholder="Quantity" data-toggle="tooltip" data-placement="top")
+						div(class="form-row")
+							label(for="addQty")
+							button(id="addQty" type="button" class="btn btn-primary") Add
+		if user
+			h4 1. Enter name of the person checking out
 			form(id="add-check-out-form" class="mb-3")
 				#input-row.form-row
 					div(class="form-group col")
@@ -153,32 +174,74 @@ block content
 						label(for="lname") Last Name
 						input(type="text" name="lname" class="form-control" placeholder="Last Name")
 					div(class="form-group col")
+						label(for="dNum") Dot Number
+						input(type="number" name="dNum" class="form-control" placeholder="Dot #")
+					div(class="form-group col")
+						label(for="fNum") Form Number
+						input(type="number" name="fNum" class="form-control" placeholder="Form #")
+					div(class="form-group col")
 						label(for="dateDue") Date Due
-						input(type="date" name="dateDue" class="form-control" placeholder="Date Due")
-				div(class="form-row")
-					label(for="addCheckOut")
-					button(id="addCheckOutButton" type="button" class="btn btn-primary") Add Check Out
-			#div(class="container" id="current-check-out")
+						input(type="date" name="dateDue" class="form-control" placeholder="Date Due" data-toggle="tooltip" data-placement="top" title="Makeathon Due: 3/4/2018")
+			h4 2. Search for Parts, and add them by clicking
 			form(id="check-out-search-form" class="mb-3")
 				#input-row.form-row
 					div(class="form-group col")
 						label(for="category") Category
-						input(type="text" name="cat" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC     Equipment/Other")
+						input(type="text" id="check-out-cat" name="cat" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC     Equipment/Other")
 					div(class="form-group col")
 						label(for="partName") Part Name
-						input(type="text" name="partName" class="form-control" placeholder="Partname")
+						input(type="text" id="check-out-partName" name="partName" class="form-control" placeholder="Partname")
 					div(class="form-group col")
 						label(for="inputQuantity") Sub-Category
-						input(type="text" name="subCat" class="form-control" placeholder="Sub-category")
+						input(type="text" id="check-out-subCat" name="subCat" class="form-control" placeholder="Sub-category")
 					div(class="form-group col")
 						label(for="value") Value
-						input(type="text" name="val" class="form-control" placeholder="Value")
+						input(type="text" id="check-out-val" name="val" class="form-control" placeholder="Value")
 				#input-row.form-row
 					div(class="form-group col")
 						label(for="inputQuantity") Part Number
-						input(type="text" name="partNum" class="form-control" placeholder="Part Number")
+						input(type="text" id="check-out-partNum" name="partNum" class="form-control" placeholder="Part Number")
 					div(class="form-group col")
 						label(for="inputQuantity") Location
-						input(type="text" class="form-control" name="loc" placeholder="Location")
-			div(class="container" id="check-out-search-container")
-		h3(class="my-2") Current Checkouts
+						input(type="text" id="check-out-loc" class="form-control" name="loc" placeholder="Location")
+			h5 Search Results
+			table(class="table table-sm")
+				thead
+					tr
+						th Part Name
+						th Category
+						th Sub-Category
+						th Value
+						th Part #
+						th Location
+						th Qty.
+						th # Checked Out
+						th Notes
+						th # To Check Out
+				tbody(id='check-out-search-body')
+			h5 Current Check Out
+			table(class="table table-sm")
+				thead
+					tr
+						th Part Name
+						th Category
+						th Sub-Category
+						th Value
+						th Part #
+						th Location
+						th Qty.
+						th # Checked Out
+						th Notes
+						th # To Check Out
+				tbody(id='current-check-out')
+			h5 3. Once satisfied click add check out to finalize.
+			div(class="form-row")
+					label(for="addCheckOut")
+					button(id="addCheckOutButton" type="button" class="btn btn-primary") Add Check Out
+		if !user
+			h5(class="my-2") Enter Your Name and Dot Number to see your current check out.
+		if user
+			h3(class="my-2") All Checkouts
+				h5 (Hitting a plus on a checkout will add the current check-out to it)
+			div(id="all-checkouts-container")
+			

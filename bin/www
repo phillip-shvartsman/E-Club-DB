@@ -95,13 +95,13 @@ function onListening() {
 
 /* EDITING.. */
 
-
+/*
 function createAdmin(db)
 {
 	db.createCollection("admin",{strict:true},function(err,res){
 		if(err)
 		{
-			console.log(err);
+			console.log("Admin collection already exists");
 		}
 		else
 		{
@@ -115,7 +115,7 @@ function createInventory(db)
 	db.createCollection("inventory",{strict:true},function(err,res){
 		if(err)
 		{
-			console.log(err);
+			console.log("Inventory collection already exists");
 		}
 		else
 		{
@@ -126,14 +126,28 @@ function createInventory(db)
 }
 function createCheckOut(db)
 {
-	db.createCollection("check-out",{strict:true},function(err,res){
+	db.createCollection("checkOut",{strict:true},function(err,res){
 		if(err)
 		{
-			console.log(err);
+			console.log("checkout collection already exists");
 		}
 		else
 		{
-			console.log("Checkout created collection created!");
+			console.log("Checkout collection created!");
+		}
+		createCheckOutParts(db);
+	});
+}
+function createCheckOutParts(db)
+{
+	db.createCollection("checkOutParts",{strict:true},function(err,res){
+		if(err)
+		{
+			console.log("checkOutParts collection already exists");
+		}
+		else
+		{
+			console.log("checkOutParts collection created!");
 		}
 		db.close;
 	});
@@ -144,4 +158,4 @@ db.connect(db_url,function(err,db){
 		console.log(err);
 	}	
 	createInventory(db);
-});
+});*/
