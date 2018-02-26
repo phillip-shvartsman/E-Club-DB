@@ -25,8 +25,18 @@ $(document).ready(function(){
 			obj[item.name] = item.value;
 			return obj;
 		}, {});
+		for(var key in data)
+		{
+			if(typeof(data[key])=='string'&&data[key]!="")
+			{
+				newValue = data[key];
+				newValue = newValue.replace(/'/g, "");
+				newValue = newValue.replace(/"/g, "");
+				data[key] = newValue;
+			}
+		}
 		return data;
-	}
+	};
 ////TRIGGERS ASSIGNMENT FUNCTIONS////
 	function assignMouseEvents()
 	{
