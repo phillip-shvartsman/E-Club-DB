@@ -58,6 +58,10 @@ function searchParts()
 			}
 			else
 			{
+				if(res.length>15)
+				{
+					res = res.splice(1,15);
+				}
 				res.forEach(function(result){
 					addToResults(result,'#check-out-search-body','check-out-result-row');
 				});
@@ -341,7 +345,7 @@ $('#logout').on('click',function(){
 		partObj = JSON.parse($("#checkOutStorePart").attr('value'));
 		partObj['amountToCheckOut'] = formData.amountToCheckOut;
 		var valueWithQty = JSON.stringify(partObj);
-		$("[value='"+$("#checkOutStorePart").attr('value')+"']").filter(".check-out-result-row").clone().addClass('cart').attr('value',valueWithQty).append("<tr'>"+formData.amountToCheckOut+"</tr>").appendTo("#current-check-out");
+		$("[value='"+$("#checkOutStorePart").attr('value')+"']").filter(".check-out-result-row").clone().removeClass('check-out-result-row').addClass('cart').attr('value',valueWithQty).append("<tr'>"+formData.amountToCheckOut+"</tr>").appendTo("#current-check-out");
 		assignRowClick();
 		$("#qtyModal").modal('hide');
 		$('#quantity-form').trigger('reset');
@@ -451,14 +455,14 @@ function setCheckOutTriggers()
 		$('#current-check-out').children().each(function(){
 			partObj = JSON.parse($(this).attr('value')); 
 			delete partObj['amountCheckedOut'];
-			delete partObj['loc'];
 			delete partObj['notes'];
 			delete partObj['qty'];
 			formData[partObj._id]=JSON.stringify(partObj);
 		});
 		formData['checkOut_id']=$(this).parent().parent().parent().parent().attr('value');
+		console.log(formData);
 		//No items in the cart
-		if(Object.keys(formData).length=1)
+		if(Object.keys(formData).length=0)
 		{
 			errorFlash('Your current check out is empty!')
 			return;

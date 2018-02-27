@@ -227,17 +227,33 @@ router.post('/add-part-post-check-out',function(req,res,next){
 	var keys = Object.keys(parts);
 	var size = keys.length-1;
 	var index = 0;
-	addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id);	
+	db.collection('checkOut').find({_id:checkOut_id}).toArray(function(err,currentCheckOut){
+		addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id,currentCheckOut[0]);	
+	});
+	
 });
-function addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id)
+function addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id,currentCheckOut)
 {
 	var part_id;
 	var data;
 	part_id = new ObjectID(keys[index]);
 	data = JSON.parse(parts[keys[index]]);
+	//increment the amount in the inventory database that is checked out
 	db.collection('inventory').update({_id:part_id},{$inc:{amountCheckedOut:parseInt(data['amountToCheckOut'],10)}}).then(function(result){
 		var query = {};
-		query[keys[index]] = parts[keys[index]];
+		var toReAdd = parts[keys[index]];
+		console.log(currentCheckOut[0]);
+		console.log(keys[index]);
+		if(keys[index] in currentCheckOut)//If the part has been previously check out increment the value instead of writing over it
+		{
+			currentCheckOutPart = JSON.parse(currentCheckOut[keys[index]]); //The current part as it is saved in the 
+			console.log(currentCheckOutPart);
+			currentCheckOutPart['amountToCheckOut'] = parseInt(data['amountToCheckOut']) + parseInt(currentCheckOutPart['amountToCheckOut']);
+			toReAdd = JSON.stringify(currentCheckOutPart);
+			console.log(toReAdd);
+		}
+		query[keys[index]] = toReAdd;
+		
 		db.collection('checkOut').update({_id:checkOut_id},{$set:query}).then(function(result){
 			if(index == size)
 			{
@@ -251,7 +267,7 @@ function addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id)
 			else
 			{
 				index = index + 1;
-				addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id);
+				addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id,currentCheckOut);
 			}
 		})
 		.catch(function(err){
