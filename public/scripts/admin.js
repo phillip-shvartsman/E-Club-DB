@@ -58,6 +58,10 @@ function searchParts()
 			}
 			else
 			{
+				if(res.length>15)
+				{
+					res = res.splice(1,15);
+				}
 				res.forEach(function(result){
 					addToResults(result,'#check-out-search-body','check-out-result-row');
 				});
@@ -131,6 +135,16 @@ function getFormData(formID)
 		obj[item.name] = item.value;
 		return obj;
 	}, {});
+	for(var key in data)
+	{
+		if(typeof(data[key])=='string'&&data[key]!="")
+		{
+			newValue = data[key];
+			newValue = newValue.replace(/'/g, "");
+			newValue = newValue.replace(/"/g, "");
+			data[key] = newValue;
+		}
+	}
 	return data;
 };
 function addCheckoutResult(result)
@@ -168,7 +182,7 @@ function addCheckoutResult(result)
 	for(var key in toPrint)
 	{
 		jsonData = JSON.parse(toPrint[key]);
-		entry = "<tr class='checked-out-part' value='"+jsonData['_id']+"'><td>"+jsonData['amountToCheckOut']+"</td><td>"+jsonData['partName']+"</td><td>"+jsonData['partNum']+"</td><td>"+jsonData['val']+"</td><td>"+check_part+"</td></tr>";
+		entry = "<tr class='checked-out-part' value='"+jsonData['_id']+"'><td>"+jsonData['amountToCheckOut']+"</td><td>"+jsonData['partName']+"</td><td>"+jsonData['partNum']+"</td><td>"+jsonData['val']+"</td><td>"+jsonData['loc']+"</td><td>"+check_part+"</td></tr>";
 		$("[value="+result['_id']+"]").find('tbody').append(entry);
 	} 
 }
@@ -242,7 +256,6 @@ $('#logout').on('click',function(){
 		$('#current-check-out').children().each(function(){
 			partObj = JSON.parse($(this).attr('value')); 
 			delete partObj['amountCheckedOut'];
-			delete partObj['loc'];
 			delete partObj['notes'];
 			delete partObj['qty'];
 			formData[partObj._id]=JSON.stringify(partObj);
@@ -332,7 +345,7 @@ $('#logout').on('click',function(){
 		partObj = JSON.parse($("#checkOutStorePart").attr('value'));
 		partObj['amountToCheckOut'] = formData.amountToCheckOut;
 		var valueWithQty = JSON.stringify(partObj);
-		$("[value='"+$("#checkOutStorePart").attr('value')+"']").filter(".check-out-result-row").clone().addClass('cart').attr('value',valueWithQty).append("<tr'>"+formData.amountToCheckOut+"</tr>").appendTo("#current-check-out");
+		$("[value='"+$("#checkOutStorePart").attr('value')+"']").filter(".check-out-result-row").clone().removeClass('check-out-result-row').addClass('cart').attr('value',valueWithQty).append("<tr'>"+formData.amountToCheckOut+"</tr>").appendTo("#current-check-out");
 		assignRowClick();
 		$("#qtyModal").modal('hide');
 		$('#quantity-form').trigger('reset');
@@ -340,6 +353,11 @@ $('#logout').on('click',function(){
 ////ADD PART TRIGGERS////
 	$("#addPart").on("click", function(){
 	var data = getFormData('#add-form');
+	if(data['loc']==""||data['partName']==""||data['qty']==""||data['cat']=="")
+	{
+		errorFlash('Must have at least a part name, category, location, and quantity!');
+		return;
+	}
 	$.ajax({
 		method: "POST",
 		url: "/add",
@@ -437,14 +455,14 @@ function setCheckOutTriggers()
 		$('#current-check-out').children().each(function(){
 			partObj = JSON.parse($(this).attr('value')); 
 			delete partObj['amountCheckedOut'];
-			delete partObj['loc'];
 			delete partObj['notes'];
 			delete partObj['qty'];
 			formData[partObj._id]=JSON.stringify(partObj);
 		});
 		formData['checkOut_id']=$(this).parent().parent().parent().parent().attr('value');
+		console.log(formData);
 		//No items in the cart
-		if(Object.keys(formData).length=1)
+		if(Object.keys(formData).length=0)
 		{
 			errorFlash('Your current check out is empty!')
 			return;
