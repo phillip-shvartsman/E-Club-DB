@@ -1,27 +1,26 @@
-var records = [
-    { id: 1, username: 'main', password: 'secret', displayName: 'Jack', emails: [ { value: 'jack@example.com' } ] },
-	{ id: 2, username: 'login', password: 'secret', displayName: 'Jim', emails: [ { value: 'jack@example.com' } ] }
-];
-
-exports.findById = function(id, cb) {
+exports.findById = function(id, cb, db) {
   process.nextTick(function() {
-    var idx = id - 1;
-    if (records[idx]) {
-      cb(null, records[idx]);
-    } else {
-      cb(new Error('User ' + id + ' does not exist'));
-    }
+	var idx = id - 1;
+	db.collection('admin').find({}).toArray(function(err,records){
+		if (records[idx]) {
+		  cb(null, records[idx]);
+		} else {
+		  cb(new Error('User ' + id + ' does not exist'));
+		}
+	});
   });
 }
-
-exports.findByUsername = function(username, cb) {
+exports.findByUsername = function(username, cb, db) {
   process.nextTick(function() {
-    for (var i = 0, len = records.length; i < len; i++) {
-      var record = records[i];
-      if (record.username === username) {
-        return cb(null, record);
-      }
-    }
-    return cb(null, null);
+	db.collection('admin').find({}).toArray(function(err,records){
+		for (var i = 0, len = records.length; i < len; i++) {
+			var record = records[i];
+				if (record.username === username) {
+					return cb(null, record);
+				}
+		}
+		return cb(null, null);
+	});
+    
   });
 }
