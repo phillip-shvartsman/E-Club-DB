@@ -60,21 +60,13 @@ mongoClient.connect(db_url,
 });
 /* GET home page. */
 router.get('/', function(req, res, next) {
-	/*db.collection('inventory').find().toArray(function(err,docs){
-			db.close();*/
-			res.render('index', { title: 'Electronics Club @ OSU', user:req.user});
-		/*});; 	
-	});*/
-	//res.sendFile(path.join(__dirname+'/old-site/index.html'));
+	res.render('index', { title: 'Electronics Club @ OSU', user:req.user});
 });
 router.post('/search', function(req, res, next){
 	console.log("We got a search request!");
 	var query = createSearchQuery(req);
-	//console.log(query);
 	db.collection('inventory').find(query).limit(100).toArray(function(err,results){
 			if(err) throw err;
-			db.close;
-			//console.log(results);
 			res.send(results);
 			
 	}); 
@@ -83,7 +75,6 @@ router.post('/add', function(req, res, next){
 	console.log("We got an add request!");
 	req.body['amountCheckedOut']=0;
 	db.collection('inventory').insert(req.body).then(function(result){
-		db.close;
 		res.end();
 	}).catch(function(err){
 		console.log(err);
@@ -93,7 +84,6 @@ router.post('/delete', function(req, res, next){
 	console.log("We got an delete request!");
 	var _id = new ObjectID(req.body._id);
 	db.collection('inventory').remove({_id:_id}).then(function(){
-		db.close;
 		res.end();
 	}).catch(function(err){
 		console.log(err);
@@ -103,7 +93,6 @@ router.post('/modify',function(req,res,next){
 	var _id = new ObjectID(req.body._id);
 	delete req.body._id;
 	db.collection('inventory').update({_id:_id},{$set:req.body}).then(function(result){
-			db.close;
 			res.end();
 	}).catch(function(error) {
 		console.log(error);
@@ -113,8 +102,6 @@ router.post('/get-check-outs',function(req,res,next){
 	console.log('We got a check-out request');
 	db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
 		if(err) throw err;
-			db.close;
-			//console.log(results);
 			res.send(results);
 	});
 });
@@ -132,11 +119,24 @@ router.post('/add-check-out',function(req,res,next){
 	delete strip_result['fNum'];
 	delete strip_result['checkedIn'];
 	delete strip_result['lname'];
-	//console.log(strip_result);
-	var keys= Object.keys(strip_result);
-	var index = 0;
-	var size = keys.length-1;
-	incParts(res,store,keys,index,size);
+	db.collection('checkOut').find({fNum:req.body['fNum'],checkedIn:false}).toArray(function(err,results){ //check if the fNum already exists
+		if(err) throw err;
+			console.log(results);
+			console.log(results.length)
+			if(results.length>0)
+			{
+				res.status(409);
+				res.send('This form number is already being used!');
+			}
+			else
+			{
+				//console.log(strip_result);
+				var keys= Object.keys(strip_result);
+				var index = 0;
+				var size = keys.length-1;
+				incParts(res,store,keys,index,size);
+			}
+	});
 });
 function incParts(res,store,keys,index,size)
 {
@@ -147,7 +147,6 @@ function incParts(res,store,keys,index,size)
 		if(size==index)
 		{
 			db.collection('checkOut').insert(store).then(function(){
-					db.close;
 					res.end();
 				}).catch(function(error) {
 					console.log(error);
@@ -170,7 +169,6 @@ router.post('/check-in-all',function(req,res,next){
 		{
 			console.log('Bad ID for check in');
 			res.end();
-			db.close();
 		}
 		else
 		{
@@ -203,8 +201,6 @@ function decParts(res,store,keys,index,size,checkOut_id){
 			db.collection('checkOut').remove({_id:checkOut_id}).then(function(results){
 				db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
 				if(err) throw err;
-					db.close;
-					//console.log(results);
 					res.send(results);
 				});
 			}).catch(function(err){
@@ -260,8 +256,6 @@ function addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id,currentC
 			{
 				db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
 				if(err) throw err;
-					db.close;
-					//console.log(results);
 					res.send(results);
 				});
 			}
@@ -306,8 +300,6 @@ router.post('/check-in-part',function(req,res,next){
 			db.collection('checkOut').update({_id:checkOut_id},{$unset:unset}).then(function(results){
 				db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
 				if(err) throw err;
-					db.close;
-					//console.log(results);
 					res.send(results);
 				});
 			}).catch(function(err){
@@ -324,8 +316,6 @@ router.post('/check-check-out',function(req,res,next){
 	var query = createSearchCheckOut(req);
 	db.collection('checkOut').find(query).toArray(function(err,results){
 	if(err) throw err;
-		db.close;
-		//console.log(results);
 		res.send(results[0]);
 	});
 });
@@ -413,7 +403,6 @@ function createCheckOutParts()
 		{
 			console.log("checkOutParts collection created!");
 		}
-		db.close;
 	});
 }
 

@@ -41,7 +41,7 @@ block content
 							div(class="modal-body")
 								button(type="button" id="modify-button" class="btn btn-primary") Modify
 								button(type="button" id="delete-button" class="btn btn-danger") Delete
-						form(id="modify-form" style="display:none")
+						form(id="modify-form" class='m-3' style="display:none")
 							#input-row.form-row
 								div(class="form-group col")
 									label(for="category") Category
@@ -71,7 +71,7 @@ block content
 									textarea(class="form-control" id="mod-notes" rows="5" name="notes")
 							div(class="form-row")
 								label(for="inputQuantity")
-								button(id="modifyPart" style="padding:10px;" type="button" class="btn btn-primary") Save
+								button(id="modifyPart" type="button" class="m-3 btn btn-primary") Save
 			form(id="add-form")
 				#input-row.form-row
 					div(class="form-group col")
@@ -152,11 +152,11 @@ block content
 							button(type="button" class="close" data-dismiss="modal")
 						form(id="quantity-form")
 							div(class="form-group col")
-								label(for="amountCheckedOut") Quantity
+								label(for="amountToCheck") Quantity
 								input(type="number" name="amountToCheckOut" class="form-control" placeholder="Quantity" data-toggle="tooltip" data-placement="top")
 						div(class="form-row")
 							label(for="addQty")
-							button(id="addQty" type="button" class="btn btn-primary") Add
+							button(id="addQty" type="button" class="m-3 btn btn-primary") Add
 		if user
 			h4 1. Enter name of the person checking out
 			form(id="add-check-out-form" class="mb-3")
@@ -198,7 +198,7 @@ block content
 					div(class="form-group col")
 						label(for="inputQuantity") Location
 						input(type="text" id="check-out-loc" class="form-control" name="loc" placeholder="Location")
-			h5 Search Results
+			h6 Search Results
 			table(class="table table-sm")
 				thead
 					tr
@@ -213,7 +213,7 @@ block content
 						th Notes
 						th # To Check Out
 				tbody(id='check-out-search-body')
-			h5 Current Check Out
+			h4 Current Check Out Cart
 			table(class="table table-sm")
 				thead
 					tr
@@ -228,7 +228,7 @@ block content
 						th Notes
 						th # To Check Out
 				tbody(id='current-check-out')
-			h5 3. Once satisfied click add check out to finalize.
+			h4 3. Once satisfied click below to finalize.
 			div(class="form-row")
 					button(id="addCheckOutButton" type="button" class="btn btn-primary") Add Check Out
 		if !user
@@ -247,5 +247,19 @@ block content
 		if user
 			h3(class="my-2") All Checkouts
 				h5 (Hitting a plus on a checkout will add the current check-out to it)
+				form(id="filter-checkouts")
+					#input-row.form-row
+						div(class="form-group col")
+							label(for="fname") First Name
+							input(type="text" name="fname" class="form-control filter" placeholder="First Name")
+						div(class="form-group col")
+							label(for="lname") Last Name
+							input(type="text" name="lname" class="form-control filter" placeholder="Last Name")
+						div(class="form-group col")
+							label(for="dNum") Dot #
+							input(type="number" name="dNum" class="form-control filter" placeholder="Dot #")
+						div(class="form-group col")
+							label(for="fNum") Form Number
+							input(type="number" name="fNum" class="form-control filter" placeholder="Form #")
 			div(id="all-checkouts-container")
 			

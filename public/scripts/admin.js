@@ -60,7 +60,7 @@ function searchParts()
 			{
 				if(res.length>15)
 				{
-					res = res.splice(1,15);
+					res = res.splice(0,15);
 				}
 				res.forEach(function(result){
 					addToResults(result,'#check-out-search-body','check-out-result-row');
@@ -187,6 +187,28 @@ function addCheckoutResult(result)
 	} 
 }
 $(document).ready(function(){
+$('.filter').on('input',function(){
+	var formData = getFormData('#filter-checkouts');
+	$('#all-checkouts-container').children().each(function(){
+		var fnameReg = new RegExp(formData['fname'],"i")
+		var lnameReg = new RegExp(formData['lname'],"i")
+		var dNumReg = new RegExp(formData['dNum'],"i")
+		var fnumReg = new RegExp(formData['fNum'],"i")
+		var fnameVal = $(this).attr('fname').search(fnameReg);
+		var lnameVal = $(this).attr('lname').search(lnameReg);
+		var dNumVal = $(this).attr('dnum').search(dNumReg);
+		var fnumVal = $(this).attr('fnum').search(fnumReg);
+		var sum = fnameVal + lnameVal + dNumVal + fnumVal;
+		if(sum>=0)
+		{
+			$(this).css("display","");
+		}
+		else
+		{
+			$(this).css("display","none");
+		}
+	});
+});
 ////FUNCTIONS TO RUN AT START////
 $('#invModal').modal(
 	{
@@ -273,6 +295,10 @@ $('#logout').on('click',function(){
 				successFlash('Checkout Added!');
 			},
 			error: function(err,status){
+				if(status == 'error')
+				{
+					errorFlash('That form number is probably already in use');
+				}
 			},
 		});
 	});
@@ -319,28 +345,43 @@ $('#logout').on('click',function(){
 	});
 	////DELETE TRIGGERS////
 	$('#delete-button').on('click',function(){
-		partObj = JSON.parse($("#storePart").attr('value'));
-		uniq_id = partObj._id;
-		$.ajax({
-            method: "POST",
-            url: "/delete",
-            data: {
-				_id : uniq_id
-			},
-            success: function( res,status ) {
-				successFlash('Part was deleted!')
-				addAdminPartSearch();
-				$("#storePart").attr('value',"");
-				$("[value="+uniq_id+"]").remove();
-				$("#invModal").modal('hide');
-            },
-            error: function(err,status){
-				alert('Error deleting part');
-            },
-        });
+		var partObj = JSON.parse($("#storePart").attr('value'));
+		var uniq_id = partObj._id;
+		$.confirm({
+			title: 'Confirmation',
+			content: 'Confirm delete part?',
+			buttons: {
+				confirm: function () {
+					$.ajax({
+						method: "POST",
+						url: "/delete",
+						data: {
+							_id : uniq_id
+						},
+						success: function( res,status ) {
+							successFlash('Part was deleted!')
+							addAdminPartSearch();
+							$("#storePart").attr('value',"");
+							$("[value="+uniq_id+"]").remove();
+							$("#invModal").modal('hide');
+						},
+						error: function(err,status){
+							alert('Error deleting part');
+						},
+					});
+				},
+				cancel: function () {
+				},
+			}
+		});
 	});
 	$("#addQty").on('click',function(){
 		var formData = getFormData('#quantity-form');
+		if(formData['amountToCheckOut']<=0)
+		{
+			errorFlash('Invalid amount to check out.');
+			return;
+		}
 		$('#quantity-form').trigger('reset');
 		partObj = JSON.parse($("#checkOutStorePart").attr('value'));
 		partObj['amountToCheckOut'] = formData.amountToCheckOut;
@@ -349,6 +390,8 @@ $('#logout').on('click',function(){
 		assignRowClick();
 		$("#qtyModal").modal('hide');
 		$('#quantity-form').trigger('reset');
+		$('#check-out-search-form').trigger('reset');
+		$('#check-out-search-body').empty();
 	});
 ////ADD PART TRIGGERS////
 	$("#addPart").on("click", function(){
@@ -406,49 +449,73 @@ function setCheckOutTriggers()
 {
 	$('.check-box-all').on('click',function(){
 		var _id =$(this).parent().parent().parent().parent().attr('value');
-		$.ajax({
-			method: "POST",
-			url: "/check-in-all",
-			data: {
-				_id:_id
-			},
-			success: function( res,status ) {
-				successFlash('Checked in all of the parts!');
-				$('#all-checkouts-container').empty();
-				res.forEach(function(result){
-					addCheckoutResult(result);
-				});
-				setCheckOutTriggers();
-				$('#check-out-search-body').empty();
-			},
-			error: function(err,status){
-				alert('Error checking in order');
-			},
+		$.confirm({
+			title: 'Confirmation',
+			content: 'Confirm this whole check in?',
+			buttons: {
+				confirm: function () {
+					$.ajax({
+						method: "POST",
+						url: "/check-in-all",
+						data: {
+							_id:_id
+						},
+						success: function( res,status ) {
+							successFlash('Checked in all of the parts!');
+							$('#all-checkouts-container').empty();
+							res.forEach(function(result){
+								addCheckoutResult(result);
+							});
+							setCheckOutTriggers();
+							$('#check-out-search-body').empty();
+							$('.filter').trigger('input');
+						},
+						error: function(err,status){
+							alert('Error checking in order');
+						},
+					});
+				},
+				cancel: function () {
+				}
+			}
 		});
 	});
 	$('.check-box-part').on('click',function(){
 		var part_id =$(this).parent().parent().attr('value');
 		var checkOut_id=$(this).parent().parent().parent().parent().attr('value');
-		$.ajax({
-			method: "POST",
-			url: "/check-in-part",
-			data: {
-				part_id:part_id,
-				checkOut_id:checkOut_id
-			},
-			success: function( res,status ) {
-				successFlash('Checked in that part!');
-				$('#all-checkouts-container').empty();
-				res.forEach(function(result){
-					addCheckoutResult(result);
+		$.confirm({
+			title: 'Confirmation',
+			content: 'Confirm this part checkout',
+			buttons: {
+				confirm: function () {
+				$.ajax({
+					method: "POST",
+					url: "/check-in-part",
+					data: {
+						part_id:part_id,
+						checkOut_id:checkOut_id
+					},
+					success: function( res,status ) {
+						successFlash('Checked in that part!');
+						$('#all-checkouts-container').empty();
+						res.forEach(function(result){
+							addCheckoutResult(result);
+						});
+						setCheckOutTriggers();
+						$('#check-out-search-body').empty();
+						$('.filter').trigger('input');
+					},
+					error: function(err,status){
+						alert('Error checking in part');
+					},
 				});
-				setCheckOutTriggers();
-				$('#check-out-search-body').empty();
-			},
-			error: function(err,status){
-				alert('Error checking in part');
-			},
+				},
+				cancel: function () {
+			  
+				}
+			}
 		});
+		
 	});
 	$('.plus-box').on('click',function(){
 		var formData = {};
@@ -459,31 +526,41 @@ function setCheckOutTriggers()
 			delete partObj['qty'];
 			formData[partObj._id]=JSON.stringify(partObj);
 		});
-		formData['checkOut_id']=$(this).parent().parent().parent().parent().attr('value');
-		console.log(formData);
-		//No items in the cart
-		if(Object.keys(formData).length=0)
+		if(Object.keys(formData).length==0)
 		{
 			errorFlash('Your current check out is empty!')
 			return;
 		}
-		$.ajax({
-			method: "POST",
-			url: "/add-part-post-check-out",
-			data: formData,
-			success: function( res,status ) {
-				successFlash('Added those parts!');
-				$('#all-checkouts-container').empty();
-				res.forEach(function(result){
-					addCheckoutResult(result);
-					console.log(res);
-				});
-				setCheckOutTriggers();
-				$('#check-out-search-body').empty();
-			},
-			error: function(err,status){
-				alert('Error checking in part');
-			},
+		formData['checkOut_id']=$(this).parent().parent().parent().parent().attr('value');
+		//No items in the cart
+		$.confirm({
+			title: 'Confirmation',
+			content: 'Confirm this part addition',
+			buttons: {
+				confirm: function () {
+					$.ajax({
+						method: "POST",
+						url: "/add-part-post-check-out",
+						data: formData,
+						success: function( res,status ) {
+							successFlash('Added those parts!');
+							$('#all-checkouts-container').empty();
+							res.forEach(function(result){
+								addCheckoutResult(result);
+							});
+							setCheckOutTriggers();
+							$('#check-out-search-body').empty();
+							$('.filter').trigger('input');
+						},
+						error: function(err,status){
+							alert('Error checking in part');
+						},
+					});
+				},
+				cancel: function () {
+			  
+				}
+			}
 		});
 	});
 }

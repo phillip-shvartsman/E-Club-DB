@@ -21,6 +21,5 @@ exports.findByUsername = function(username, cb, db) {
 		}
 		return cb(null, null);
 	});
-    
   });
 }
