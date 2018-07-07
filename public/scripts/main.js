@@ -1,30 +1,34 @@
 var timeout = null;
+
 $(document).ready(function(){
 ////FUNCTIONS TO RUN AT START////
+	//Bootstrap enable tooltip
 	$(function () {
 		$('[data-toggle="tooltip"]').tooltip();
 	})
+
 ////DOM MANIPULATION FUNCTIONS////
+	//Add a result row from a mustache template
 	function addToResults(result,div)
 	{
-		$(div).append("<tr class='result-row' value='"+JSON.stringify(result)+"'>"+
-		"<td>"+result.partName+"</td>"+
-		"<td>"+result.cat+"</td>"+
-		"<td>"+result.subCat+"</td>"+
-		"<td>"+result.val+"</td>"+
-		"<td>"+result.partNum+"</td>"+
-		"<td>"+result.loc+"</td>"+
-		"<td>"+result.qty+"</td>"+
-		"<td>"+result.amountCheckedOut+"</td>"+
-		"<td>"+result.notes+"</td>"+
-		"</tr>");
+		//Get template, found in index.pug
+		var template = $("#result-row-template").html();
+
+		//Store whole data in value field of template
+		result.value = JSON.stringify(result);
+
+		$(div).append(Mustache.to_html(template,result));
 	}
+	//Get data from a form store based on name
 	function getFormData(formID)
 	{
-		var data = $(formID).serializeArray().reduce(function(obj, item) {
+		//Serialize the array from the form and build an object from it.
+		var data = $(formID).serializeArray().reduce(function(obj, item) 
+{
 			obj[item.name] = item.value;
 			return obj;
 		}, {});
+		//Remove ‘ and “ characters from input
 		for(var key in data)
 		{
 			if(typeof(data[key])=='string'&&data[key]!="")
@@ -37,7 +41,9 @@ $(document).ready(function(){
 		}
 		return data;
 	};
+
 ////TRIGGERS ASSIGNMENT FUNCTIONS////
+	//Add triggers to result rows
 	function assignMouseEvents()
 	{
 		$(".result-row").on('mouseenter',function(){
@@ -47,15 +53,38 @@ $(document).ready(function(){
 			$(this).css('background-color', 'transparent');
 		});
 	}
-////LOGIN TRIGGERS////
-	$("#show-login").on('click',function(){
-		$('#show-login').fadeOut('fast',function(){
-			$('#login-container').fadeIn('fast',function(){});
+
+////Flash Messages////
+	//Add message to either errorFlash or successFlash then show it and fade it out
+	//Can be found in index.pug
+	function errorFlash(error)
+	{
+		$('#errorFlash').html("<strong>Error!</strong> "+error);
+
+		$('#errorFlash').fadeIn('fast',function(){
+			setTimeout(function(){
+				$('#errorFlash').fadeOut('fast',function(){
+				});
+			},1000);
 		});
-	});
+	}
+	function successFlash(message)
+	{
+		$('#successFlash').html("<strong>Success!</strong> "+message);
+		$('#successFlash').fadeIn('fast',function(){
+			setTimeout(function(){
+				$('#successFlash').fadeOut('fast',function(){
+				});
+			},1000);
+		});
+	}
+
+////No-login search: search for people that are not logged in///
+	//On input in the search form, start a timeout
 	$('.no-login-input').on('input',function(){
 		addNoLoginSearch();
 	});
+	//Throttle timeout so a search isn't made for every key input
 	function addNoLoginSearch(){
 		clearTimeout(timeout);
 		timeout = setTimeout(function()
@@ -63,11 +92,78 @@ $(document).ready(function(){
 			noLoginSearch();
 		},750);
 	}
-	$('#search-tab').on('click',function(){
-		$('#search-table-body').empty();
+	//Actual search function
+	function noLoginSearch()
+	{
+		var data = getFormData('#search-form');
+        $.ajax({
+            method: "POST",
+            url: "/search",
+            data: data,
+            success: function( res,status ) {
+				//Flush search results
+				$('#search-table-body').empty();
+				
+				//If we get results
+				if(res.length != 0)
+				{
+					//Go through results and add to results table
+					res.forEach(function(result){
+						addToResults(result,'#search-table-body');
+					});
+					//Assign mouse events to the new rows
+					assignMouseEvents();
+				}
+            },
+            error: function(err,status){
+                errorFlash("Could not complete search")
+            }
+        });
+	}
+
+////Login Functions////
+	//Shows login screen on clicking the button
+	$("#show-login").on('click',function(){
+		$('#show-login').fadeOut('fast',function(){
+			$('#login-container').fadeIn('fast',function(){});
+		});
 	});
+	
+////Navigating between search and check-outs tabs////
+	$('#search-tab').on('click',function(){
+		//Clear results
+		$('#search-table-body').empty();
+		//Modify how the screen looks and what is displayed
+		if(!$(this).hasClass('active'))
+		{
+				$('#check-out-container').fadeOut('fast',function(){
+					$('#search-container').fadeIn('fast',function(){
+						
+					});
+				});
+				$('#top-nav').find('.active').removeClass('active');
+				$('#top-nav').find('#search-tab').addClass('active');
+		}
+	});
+	$('#check-out-tab').on('click',function(){
+		if(!$(this).hasClass('active'))
+		{
+				$('#search-container').fadeOut('fast',function(){
+					$('#check-out-container').fadeIn('fast',function(){
+						
+					});
+				});
+				$('#top-nav').find('.active').removeClass('active');
+				$('#top-nav').find('#check-out-tab').addClass('active');
+				
+		}
+	});
+
+////Check-out tab functions////
+	//A user searching for their checkout
 	$('#check-check-out-button').on('click',function(){
 		formData = getFormData('#check-check-out-form');
+		//Got to have first + last name
 		if(formData['lname']==""||formData['dNum']=="")
 		{
 			errorFlash('Missing information!');
@@ -88,101 +184,17 @@ $(document).ready(function(){
 				addCheckoutResult(res)
             },
             error: function(err,status){
-				
+				errorFlash('Error communicating with the server!');
             },
         });
-	});
-	function errorFlash(error)
-	{
-		$('#errorFlash').html("<strong>Error!</strong> "+error);
-		$('#errorFlash').fadeIn('fast',function(){
-			setTimeout(function(){
-				$('#errorFlash').fadeOut('fast',function(){
-				});
-			},1000);
-		});
-	}
-	function successFlash(message)
-{
-	$('#successFlash').html("<strong>Success!</strong> "+message);
-	$('#successFlash').fadeIn('fast',function(){
-		setTimeout(function(){
-			$('#successFlash').fadeOut('fast',function(){
-			});
-		},1000);
-	});
-	}
-	function noLoginSearch()
-	{
-		var data = getFormData('#search-form');
-        $.ajax({
-            method: "POST",
-            url: "/search",
-            data: data,
-            success: function( res,status ) {
-                $('#search-table-body').empty();
-				if(res.length == 0)
-				{
-				}
-				else
-				{
-					res.forEach(function(result){
-						addToResults(result,'#search-table-body');
-					});
-					assignMouseEvents();
-				}
-            },
-            error: function(err,status){
-                $('#results-container').empty();
-				$('#results-container').append("<p>Error fetching results</p>");
-            },
-        });
-	}
-////SEARCH TRIGGERS////
-    $('#search-tab').on('click',function(){
-		if(!$(this).hasClass('active'))
-		{
-				$('#check-out-container').fadeOut('fast',function(){
-					$('#search-container').fadeIn('fast',function(){
-						
-					});
-				});
-				$('#top-nav').find('.active').removeClass('active');
-				$('#top-nav').find('#search-tab').addClass('active');
-		}
-	});
-////DOM NAVIGATION////
-	$('#check-out-tab').on('click',function(){
-		if(!$(this).hasClass('active'))
-		{
-				$('#search-container').fadeOut('fast',function(){
-					$('#check-out-container').fadeIn('fast',function(){
-						
-					});
-				});
-				$('#top-nav').find('.active').removeClass('active');
-				$('#top-nav').find('#check-out-tab').addClass('active');
-				
-		}
-	});
+	});	
 	function addCheckoutResult(result)
 	{
-		var check = "<img class='check-box-all' src='/images/check.png'>";
-		var check_part = "<img class='check-box-part' src='/images/check.png'>";
-		var plus = "<img class='plus-box' src='/images/plus.png'>";
-		var table = "<table class='table table-sm check-out-table' fNum='"+result['fNum']+"' dNum='"+result['dNum']+"' fname='"+result['fname']+"' lname='"+result['lname']+"' value='"+result['_id']+"'>"+
-		"<thead>"+
-		"<tr>"+
-		"</tr>"+
-		"</thead>"+
-		"<tbody>"+
-		"</tbody>"+
-		"</table>";
-		heading="<th>"+result['fname']+" "+result['lname']+"</th>"+
-		"<th>Dot # "+result['dNum']+"</th>"+
-		"<th>Due on "+result['dateDue']+"</th>";
-		$('#your-check-out').append(table);
-		$("[value="+result['_id']+"]").find('thead').find('tr').append(heading);
+		//Load from template and append
+		var template = $("#checkout-table-template").html();
+		$('#your-check-out').append(Mustache.to_html(template,result));
+
+		//Save a copy of the object and delete everything except the checkedout parts
 		toPrint = Object.assign({},result);
 		delete toPrint['fname'];
 		delete toPrint['lname'];
@@ -191,15 +203,16 @@ $(document).ready(function(){
 		delete toPrint['dNum'];
 		delete toPrint['fNum'];
 		delete toPrint['checkedIn'];
-		if(Object.keys(toPrint).length==1)
+		
+		//Load entry template
+		var template = $("#checkout-entry-template").html();
+		
+		//For each part use the entry template
+		for(var partID in toPrint)
 		{
-			check_part = "";
-		}
-		for(var key in toPrint)
-		{
-			jsonData = JSON.parse(toPrint[key]);
-			entry = "<tr class='checked-out-part' value='"+jsonData['_id']+"'><td>"+jsonData['amountToCheckOut']+"</td><td>"+jsonData['partName']+"</td><td>"+jsonData['partNum']+"</td><td>"+jsonData['val']+"</td></tr>";
-			$("[value="+result['_id']+"]").find('tbody').append(entry);
+			partCheckedOut = JSON.parse(toPrint[partID]);
+			toAppend =  Mustache.to_html(template,partCheckedOut);
+			$("[_id="+result['_id']+"]").find('tbody').append(toAppend);
 		} 
 	}
 	

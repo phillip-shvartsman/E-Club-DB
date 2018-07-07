@@ -18,14 +18,18 @@ router.use(require('express-session')({ secret: 'supersecretsave', resave: false
 passport.use(new Strategy(
   function(username, password, cb) {
     auth.users.findByUsername(username, function(err, user) {
-      if (err) { return cb(err); }
+	  console.log(user); 
+	  if (err) { return cb(err); }
       if (!user) { return cb(null, false); }
-      if (user.password != password) { return cb(null, false); }
+      if (user.password != password) { 
+		 
+		return cb(null, false); }
       return cb(null, user);
     },db);
   }));
   
 passport.serializeUser(function(user, cb) {
+  console.log(user);
   cb(null, user.id);
 }); 
 

@@ -1,79 +1,61 @@
 ////TIMEOUT FUNCTIONS////
 var timeout = null; //Timeout for seach
-function addPartSearch()
+//Create a timeout that can be reset based on a callback
+function createTimeout(cb)
 {
 	clearTimeout(timeout);
 	timeout = setTimeout(function()
 	{
-		searchParts();
+		cb();
 	},500);
-};
-function addAdminPartSearch()
-{
-	clearTimeout(timeout);
-	timeout = setTimeout(function()
-	{
-		adminPartSearch();
-	},500);
-};
-////SEARCH/HELPER FUNCTIONS////
-function adminPartSearch()
-{
-	var data = getFormData('#add-form');
-	$.ajax({
-		method: "POST",
-		url: "/search",
-		data: data,
-		success: function( res,status ) {
-			$('#search-table-body').empty();
-			if(res.length == 0)
-			{
-			}
-			else
-			{
-				res.forEach(function(result){
-					addToResults(result,'#search-table-body','result-row');
-				});
-				assignMouseEvents();
-				assignRowClick();
-			}
-		},
-		error: function(err,status){
-			$('#search-table-body').empty();
-			$('#search-table-body').append("<p>Error fetching results</p>");
-		},
-	});
 }
-function searchParts()
+////SEARCH/HELPER FUNCTIONS////
+//formID: DOM selector for form to take data from and do a search with
+//tableID: DOM selector for table BODY to place results in
+//rowClass: Class to give each row
+//numRows: Number of rows to actually draw
+function searchAndRebuildTable(formID,tableID,rowClass,numRows = 100)
 {
-	var data = getFormData('#check-out-search-form');
+	//Get data from a form
+	var data = getFormData(formID);
 	$.ajax({
 		method: "POST",
 		url: "/search",
 		data: data,
 		success: function( res,status ) {
-			$('#check-out-search-body').empty();
-			if(res.length == 0)
+			//Rebuild table
+			$(tableID).empty();
+			if(res.length>0)
 			{
-			}
-			else
-			{
-				if(res.length>15)
+				if(res.length>numRows) //Cut extra rows if we don't want to display them
 				{
-					res = res.splice(0,15);
+					res = res.splice(0,numRows);
 				}
 				res.forEach(function(result){
-					addToResults(result,'#check-out-search-body','check-out-result-row');
+					addToResults(result,tableID,rowClass);
 				});
+				//Attach handlers for mouse events and row clicks
+				assignMouseEvents();
+				assignRowClick();
 				assignCheckOutMouseEvents();
 				assignCheckOutClick();
 			}
 		},
 		error: function(err,status){
-			$('#check-out-search-container').empty();
-			$('#check-out-search-container').append("<p>Error fetching results</p>");
+			$(tableID).empty();
+			$(tableID).append("<p>Error fetching results</p>");
 		},
 	});
+}; 
+//Search for parts on main screen
+function adminPartSearch()
+{
+	searchAndRebuildTable('#add-form','#search-table-body','result-row',100);
+}
+//Searching for parts for adding to checkout
+function searchPartsCheckout()
+{
+	searchAndRebuildTable('#check-out-search-form','#check-out-search-body','check-out-result-row',15);
 }
 ////ASSIGN TRIGGER FUNCTIONS////
 function assignCheckOutMouseEvents()
@@ -153,18 +135,8 @@ function addCheckoutResult(result)
 	var check_part = "<img class='check-box-part' src='/images/check.png'>";
 	var plus = "<img class='plus-box' src='/images/plus.png'>";
 	var table = "<table class='table table-sm check-out-table' fNum='"+result['fNum']+"' dNum='"+result['dNum']+"' fname='"+result['fname']+"' lname='"+result['lname']+"' value='"+result['_id']+"'>"+
-	"<thead>"+
-	"<tr>"+
-	"</tr>"+
-	"</thead>"+
-	"<tbody>"+
-	"</tbody>"+
-	"</table>";
-	heading="<th>"+result['fname']+" "+result['lname']+"</th>"+
-	"<th>Dot # "+result['dNum']+"</th>"+
-	"<th>Form # "+result['fNum']+"</th>"+
-	"<th>Due on "+result['dateDue']+"</th>"+
-	"<td>"+plus+check+"</td>";
+	"<thead>"+"<tr>"+"</tr>"+"</thead>"+"<tbody>"+"</tbody>"+"</table>";
+	heading="<th>"+result['fname']+" "+result['lname']+"</th>"+"<th>Dot # "+result['dNum']+"</th>"+"<th>Form # "+result['fNum']+"</th>"+"<th>Due on "+result['dateDue']+"</th>"+"<td>"+plus+check+"</td>";
 	$('#all-checkouts-container').append(table);
 	$("[value="+result['_id']+"]").find('thead').find('tr').append(heading);
 	toPrint = Object.assign({},result);
@@ -260,7 +232,7 @@ $('#logout').on('click',function(){
 		});
 	});
 	$("#check-out-cat,#check-out-partName,#check-out-subCat,#check-out-val,#check-out-partNum,#check-out-loc").on('input',function(){
-		addPartSearch();
+		createTimeout(searchPartsCheckout);
 	});
 	$('#addCheckOutButton').on('click',function(){
 		var formData = getFormData('#add-check-out-form');
@@ -330,7 +302,7 @@ $('#logout').on('click',function(){
             success: function( res,status ) {
 				successFlash('Part was modified!');
 				$("#invModal").modal('hide');
-				addAdminPartSearch();
+				createTimeout(adminPartSearch);
             },
             error: function(err,status){
 				alert('Error modifying part');
@@ -360,7 +332,7 @@ $('#logout').on('click',function(){
 						},
 						success: function( res,status ) {
 							successFlash('Part was deleted!')
-							addAdminPartSearch();
+							createTimeout(adminPartSearch);
 							$("#storePart").attr('value',"");
 							$("[value="+uniq_id+"]").remove();
 							$("#invModal").modal('hide');
@@ -407,7 +379,7 @@ $('#logout').on('click',function(){
 		data: data,
 		success: function( res,status ) {
 			successFlash('Part was added!')
-			addAdminPartSearch();
+			createTimeout(adminPartSearch);
 			assignMouseEvents();
 			assignRowClick();
 		},
@@ -417,11 +389,11 @@ $('#logout').on('click',function(){
 	});
 	});
 	$(".add-form-input").on('input',function(){
-		addAdminPartSearch();
+		createTimeout(adminPartSearch);
 	});
 	$('#clearAddPart').on('click',function(){
 		$('#add-form').trigger('reset');
-		addAdminPartSearch();
+		createTimeout(adminPartSearch);
 	});
 });
 function successFlash(message)
@@ -564,5 +536,3 @@ function setCheckOutTriggers()
 		});
 	});
 }
-
-
