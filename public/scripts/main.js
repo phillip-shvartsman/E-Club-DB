@@ -1,3 +1,4 @@
+//Timout shared between functions
 var timeout = null;
 
 $(document).ready(function(){
@@ -5,7 +6,7 @@ $(document).ready(function(){
 	//Bootstrap enable tooltip
 	$(function () {
 		$('[data-toggle="tooltip"]').tooltip();
-	})
+	});
 
 ////DOM MANIPULATION FUNCTIONS////
 	//Add a result row from a mustache template
@@ -40,7 +41,7 @@ $(document).ready(function(){
 			}
 		}
 		return data;
-	};
+	}
 
 ////TRIGGERS ASSIGNMENT FUNCTIONS////
 	//Add triggers to result rows
@@ -116,7 +117,7 @@ $(document).ready(function(){
 				}
             },
             error: function(err,status){
-                errorFlash("Could not complete search")
+                errorFlash("Could not complete search");
             }
         });
 	}
@@ -164,7 +165,7 @@ $(document).ready(function(){
 	$('#check-check-out-button').on('click',function(){
 		formData = getFormData('#check-check-out-form');
 		//Got to have first + last name
-		if(formData['lname']==""||formData['dNum']=="")
+		if(formData.lname==""||formData.dNum=="")
 		{
 			errorFlash('Missing information!');
 			return;
@@ -181,7 +182,7 @@ $(document).ready(function(){
 					return;
 				}
 				successFlash('Found your checkout!');
-				addCheckoutResult(res)
+				addCheckoutResult(res);
             },
             error: function(err,status){
 				errorFlash('Error communicating with the server!');
@@ -191,28 +192,28 @@ $(document).ready(function(){
 	function addCheckoutResult(result)
 	{
 		//Load from template and append
-		var template = $("#checkout-table-template").html();
-		$('#your-check-out').append(Mustache.to_html(template,result));
+		var table_template = $("#checkout-table-template").html();
+		$('#your-check-out').append(Mustache.to_html(table_template,result));
 
 		//Save a copy of the object and delete everything except the checkedout parts
 		toPrint = Object.assign({},result);
-		delete toPrint['fname'];
-		delete toPrint['lname'];
-		delete toPrint['_id'];
-		delete toPrint['dateDue'];
-		delete toPrint['dNum'];
-		delete toPrint['fNum'];
-		delete toPrint['checkedIn'];
+		delete toPrint.fname;
+		delete toPrint.lname;
+		delete toPrint._id;
+		delete toPrint.dateDue;
+		delete toPrint.dNum;
+		delete toPrint.fNum;
+		delete toPrint.checkedIn;
 		
 		//Load entry template
-		var template = $("#checkout-entry-template").html();
+		var entry_template = $("#checkout-entry-template").html();
 		
 		//For each part use the entry template
 		for(var partID in toPrint)
 		{
 			partCheckedOut = JSON.parse(toPrint[partID]);
-			toAppend =  Mustache.to_html(template,partCheckedOut);
-			$("[_id="+result['_id']+"]").find('tbody').append(toAppend);
+			toAppend =  Mustache.to_html(entry_template,partCheckedOut);
+			$("[_id="+result._id+"]").find('tbody').append(toAppend);
 		} 
 	}
 	
