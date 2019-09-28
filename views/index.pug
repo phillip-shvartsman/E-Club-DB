@@ -284,14 +284,14 @@ block content
 			tbody
 	script(id="checkout-entry-template" type="template")
 		tr(class="checked-out-part")
-			td {{amountToCheckOut}}
+			td {{amountCheckedOut}}
 			td {{partName}}
 			td {{partNum}}
 			td {{val}}
 	//- Mustache JS Templates that only are available for admin.js
 	if user
 		script(id="admin-row-template" type="template")
-			tr(class="{{optClass}}" value="{{value}}")
+			tr(class="{{optClass}}" _id="{{_id}}")
 				td {{partName}}
 				td {{cat}}
 				td {{subCat}}
@@ -302,7 +302,7 @@ block content
 				td {{amountCheckedOut}}
 				td {{notes}}
 		script(id="admin-checkout-table-template" type="template")
-			table(class="table table-sm check-out-table" value="{{_id}}" fNum="{{fNum}}" dNum="{{dNum}}" fname="{{fname}}" lname="{{lname}}")
+			table(class="table table-sm check-out-table" _id="{{_id}}" fNum="{{fNum}}" dNum="{{dNum}}" fname="{{fname}}" lname="{{lname}}")
 				thead
 					tr
 				tbody
@@ -310,15 +310,15 @@ block content
 			th {{fname}} {{lname}}
 			th Dot # {{dNum}}
 			th Form # {{fNum}}
-			th Due on dateDue
+			th Due on {{dateDue}}
 			td 
 				img(class='plus-box' src='/images/plus.png')
 				img(class='check-box-all' src='/images/check.png')
 		script(id="admin-checkout-entry" type="template")
-			tr(class="checked-out-part" value='{{_id}}')
-				td {{amountToCheckOut}}
+			tr(class="checked-out-part" _id='{{_id}}')
+				td {{amountCheckedOut}}
 				td {{partName}}
-				td {{partName}}
+				td 
 				td {{partNum}}
 				td {{val}}
 				td {{loc}}

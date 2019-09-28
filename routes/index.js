@@ -1,30 +1,69 @@
-var express = require('express');
-var router = express.Router();
+require('dotenv').config();
 
 ////EXPRESS////
+var express = require('express');
+var router = express.Router();
 router.use(require('cookie-parser')());
 router.use(require('body-parser').urlencoded({ extended: true }));
 router.use(require('express-session')({ secret: 'supersecretsave', resave: false, saveUninitialized: false }));
 
-////CONNECT TO DB AND CREATE DB OBJECT////
-//Also checks if the collections have been created
+////MONGODB CLIENT////
 var mongoClient = require('mongodb').MongoClient;
-var ObjectID = require('mongodb').ObjectID;
-var db;
-var db_url = "mongodb://localhost:27017/e-club-db";
 
-mongoClient.connect(db_url,
-	{
-	  poolSize: 20,
-	  socketTimeoutMS: 480000,
-	  keepAlive: 300000,
-	  reconnectTries: Number.MAX_VALUE,
-      reconnectInterval: 0
-	},
-	function(err,database){
-	if(err) throw err;
-	db = database;
-	createInventory();
+//ObjectID class used to create mongo unique ID objects
+var ObjectID = require('mongodb').ObjectID;
+
+//The db itself.
+var db;
+var db_url = 'mongodb://localhost:' + process.env.DB_PORT;
+
+const client = new mongoClient(db_url,
+    {
+        useNewUrlParser:true,
+        useUnifiedTopology:true,
+        poolSize: 20,
+        socketTimeoutMS: 480000,
+        keepAlive: 300000,
+        reconnectTries: Number.MAX_VALUE,
+        reconnectInterval: 0
+    }
+);
+
+//Connect on server start and create the collections used by the app.
+client.connect().then( async (client) => 
+{
+    try{
+        db = await client.db(process.env.DB_NAME);
+
+        //Insert the inventory collection if it doesn't exist
+        if(!await db.listCollections({name:'inventory'}).hasNext()){
+            await db.createCollection('inventory',{strict:true});
+        }
+
+        //On server restart read .env file to set username and password
+        if(await db.listCollections({name:'admin'}).hasNext()){
+            await db.dropCollection('admin');
+        }
+        await db.createCollection('admin',{strict:true});
+        await db.collection('admin').insertOne({id:1,username:process.env.USERNAME,password:process.env.PASSWORD});
+
+        //Create checkout collection
+        if(!await db.listCollections({name:'checkOut'}).hasNext()){
+            await db.createCollection('checkOut',{strict:true});
+        }
+        //Create checkout parts collection
+        if(!await db.listCollections({name:'checkOutParts'}).hasNext()){
+            await db.createCollection('checkOutParts',{strict:true});
+        }
+    }
+    catch(err){
+        console.error('Could not create MongoDB collections.');
+        console.error(err);
+    }
+    
+}).catch( err=>{
+    console.error('Could not connect to MongoDB instance.');
+    console.error(err);
 });
 
 ////USER IDENTIFICATION////
@@ -33,28 +72,25 @@ var passport = require('passport');
 var Strategy = require('passport-local').Strategy;
 var auth = require('../auth');
 passport.use(new Strategy(
-	function(username, password, cb) {
-	  auth.users.findByUsername(username, function(err, user) {
-		console.log(user); 
-		if (err) { return cb(err); }
-		if (!user) { return cb(null, false); }
-		if (user.password != password) { 
-		   
-		  return cb(null, false); }
-		return cb(null, user);
-	  },db);
-	}));
+    function(username, password, cb) {
+        auth.users.findByUsername(username, function(err, user) {
+            if (err) { return cb(err); }
+            if (!user) { return cb(null, false); }
+            if (user.password != password) { 
+                return cb(null, false); }
+            return cb(null, user);
+        },db);
+    }));
 	
 passport.serializeUser(function(user, cb) {
-console.log(user);
-cb(null, user.id);
+    cb(null, user.id);
 }); 
 
 passport.deserializeUser(function(id, cb) {
-auth.users.findById(id, function (err, user) {
-	if (err) { return cb(err); }
-	cb(null, user);
-},db);
+    auth.users.findById(id, function (err, user) {
+        if (err) { return cb(err); }
+        cb(null, user);
+    },db);
 });
 
 router.use(passport.initialize());
@@ -62,18 +98,19 @@ router.use(passport.session());
 
 ////LOGIN/LOGOUT ROUTES////
 router.post('/login', 
-  passport.authenticate('local', { failureRedirect: '/' }),
-  function(req, res) {
-    res.redirect('/');
-  });
+    passport.authenticate('local', { failureRedirect: '/' }),
+    function(req, res) {
+        res.redirect('/');
+    });
+
 router.get('/logout',function(req,res,next){
-	req.logout();
+    req.logout();
     res.redirect('/');
 });
 
 ////GET HOME PAGE////
 router.get('/', function(req, res, next) {
-	res.render('index', { title: 'Electronics Club @ OSU', user:req.user});
+    res.render('index', { title: 'Electronics Club @ OSU', user:req.user});
 });
 
 //////SIMPLE PART DB ENDPOINTS//////
@@ -82,24 +119,24 @@ router.get('/', function(req, res, next) {
 //Take form data and build reg expressions then send it to the database
 function createSearchQuery(req)
 {
-	if(req.body.cat==undefined||req.body.cat==null)
-	{
-		req.body.cat = "";
-	}
-	var partName = new RegExp('.*'+req.body.partName+'.*','i');
-	var cat = new RegExp('.*'+req.body.cat+'.*','i');
-	var subCat = new RegExp('.*'+req.body.subCat+'.*','i');
-	var partNum = new RegExp('.*'+req.body.partNum+'.*','i');
-	var loc = new RegExp('.*'+req.body.loc+'.*','i');
-	var val = new RegExp('.*'+req.body.val+'.*','i');
-	return {
-			partName:partName,
-			cat:cat,
-			subCat:subCat,
-			partNum:partNum,
-			loc:loc,
-			val:val
-			};
+    if(req.body.cat==undefined||req.body.cat==null)
+    {
+        req.body.cat = '';
+    }
+    var partName = new RegExp('.*'+req.body.partName+'.*','i');
+    var cat = new RegExp('.*'+req.body.cat+'.*','i');
+    var subCat = new RegExp('.*'+req.body.subCat+'.*','i');
+    var partNum = new RegExp('.*'+req.body.partNum+'.*','i');
+    var loc = new RegExp('.*'+req.body.loc+'.*','i');
+    var val = new RegExp('.*'+req.body.val+'.*','i');
+    return {
+        partName:partName,
+        cat:cat,
+        subCat:subCat,
+        partNum:partNum,
+        loc:loc,
+        val:val
+    };
 }
 //Find using regex
 //req.body.partName : Part Name
@@ -108,13 +145,31 @@ function createSearchQuery(req)
 //req.body.partNum  : Part number
 //req.body.loc      : Location in the lab
 //req.body.val      : Value eg 30K for a 30K resistor
-router.post('/search', function(req, res, next){
-	console.log("We got a search request!");
-	var query = createSearchQuery(req);
-	db.collection('inventory').find(query).limit(100).toArray(function(err,results){
-		if(err) throw err;
-		res.send(results);
-	}); 
+router.post('/search', async (req, res, next) => {
+    try{
+        const query = createSearchQuery(req);
+        const results = await db.collection('inventory').find(query).limit(100).toArray();
+        res.send(results);
+    }
+    catch(err){
+        console.error('Error in /search endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
+    
+});
+
+router.post('/get-single-part', async(req,res,next)=>{
+    try {
+        const partID = new ObjectID(req.body._id);
+        const result = await db.collection('inventory').find({_id:partID}).toArray();
+        res.send(result[0]);
+    }
+    catch(err){
+        console.error('Error in /get-single-part endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
 });
 
 ////POST ADD////
@@ -130,373 +185,236 @@ router.post('/search', function(req, res, next){
 //unique _id is generated by mongodb
 //amountCheckedOut added to default 0
 //All names come from form names which are extracted using getFormData function from name attribute in HTML
-router.post('/add', function(req, res, next){
-	console.log("We got an add request!");
-	//Set amountCheckOut to default zero, only entry that is not in user form
-	req.body.amountCheckedOut=0;
-	//Simple insert
-	db.collection('inventory').insert(req.body).then(function(result){
-		res.end();
-	}).catch(function(err){
-		console.log(err);
-	});
+router.post('/add', async (req, res, next)=>{
+    //Simple insert
+    try{
+        //Set amountCheckOut to default zero, only entry that is not in user form
+        req.body.amountCheckedOut=0;
+        await db.collection('inventory').insertOne(req.body);
+        res.end();
+    }catch(err){
+        console.error('Error in /add endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
 });
 
 ////POST DELETE////
 //req.body._id : Unique part id to delete
-router.post('/delete', function(req, res, next){
-	console.log("We got an delete request!");
-	var _id = new ObjectID(req.body._id);
-	db.collection('inventory').remove({_id:_id}).then(function(){
-		res.end();
-	}).catch(function(err){
-		console.log(err);
-	});
+router.post('/delete', async (req, res, next) => {
+    try{
+        const _id = new ObjectID(req.body._id);
+        await db.collection('inventory').remove({_id:_id});
+        res.end();
+    }
+    catch(err){
+        console.error('Error in /delete endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
 });
 
 ////POST MODIFY////
 //req.body._id : Unique id for the part
 //req.body     : New part informtion same format as add
-router.post('/modify',function(req,res,next){
-	var _id = new ObjectID(req.body._id);
-	delete req.body._id;
-	db.collection('inventory').update({_id:_id},{$set:req.body}).then(function(result){
-			res.end();
-	}).catch(function(error) {
-		console.log(error);
-	});
+router.post('/modify', async (req,res,next)=>{
+    try{
+        const _id = new ObjectID(req.body._id);
+        delete req.body._id;
+        await db.collection('inventory').updateOne({_id:_id},{$set:req.body});
+        res.end();
+    }
+    catch(err){
+        console.error('Error in /modify endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
 });
 
 //////CHECKOUT ENDPOINTS//////
 
 ////POST GET-CHECK-OUTS////
 //Simple gets everything in the checkouts collection
-router.post('/get-check-outs',function(req,res,next){
-	console.log('We got a check-out request');
-	db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
-		if(err) throw err;
-			res.send(results);
-	});
+router.post('/get-check-outs', async(req,res,next)=>{
+    try{
+        var results = await db.collection('checkOut').find({checkedIn:false}).toArray();
+        for(var i = 0 ; i < results.length; i = i + 1){
+            var checkOut = Object.assign({},results[i]);
+            for(var j =0 ; j < checkOut.parts.length; j = j + 1){
+                const partID = new ObjectID(checkOut.parts[j]._id);
+                const partArray = await db.collection('inventory').find({_id:partID}).toArray();
+                results[i].parts[j] = partArray[0];
+            }
+        }
+        res.send(results);
+    }catch(err){
+        console.error('Error in /get-check-outs endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
 });
 
 ////POST ADD-CHECK-OUT////
 //Modify the part data to account for the change in the amount checked out
-//res:Response that will eventually be sent back to the user
-//store:Value that will be stored in checkout collection
-//keys:Stripped down store, that contains only the part _ids to be modified
-//index: The current index in the recursive function
-//size: The total number of parts that are to be added.
-function incParts(res,store,keys,index,size)
-{
-	data = JSON.parse(store[keys[index]]);
-	_id = new ObjectID(keys[index]);
-	//Update the current part's amount checked out
-	db.collection('inventory').update({_id:_id},{$inc:{amountCheckedOut:parseInt(data.amountToCheckOut,10)}}).then(function(result){
-		//Once we have looped through actually add the checkOut data to the checkout collection
-		if(size==index)
-		{
-			db.collection('checkOut').insert(store).then(function(){
-					res.end();
-				}).catch(function(error) {
-					console.log(error);
-				});
-		}
-		//More parts need to have the amount checked out incremented
-		else
-		{
-				index = index + 1;
-				incParts(res,store,keys,index,size);
-		}
-	}).catch(function(error) {
-			console.log(error);
-		});
-}
-router.post('/add-check-out',function(req,res,next){
-	req.body.checkedIn = false;
-	var store = req.body;
-	//Get rid of unnecessary data need to do this because we will loop through the data to modify the amount checked out in each part
-	var strip_result =  Object.assign({},req.body);
-	delete strip_result.fname;
-	delete strip_result.dateDue;
-	delete strip_result._id;
-	delete strip_result.dNum;
-	delete strip_result.fNum;
-	delete strip_result.checkedIn;
-	delete strip_result.lname;
-	//First check that the form number doesn't already exist
-	db.collection('checkOut').find({fNum:req.body.fNum,checkedIn:false}).toArray(function(err,results){ //check if the fNum already exists
-		if(err) throw err;
-		console.log(results);
-		console.log(results.length);
-		if(results.length>0)
-		{
-			res.status(409);
-			res.send('This form number is already being used!');
-		}
-		else
-		{
-			var keys= Object.keys(strip_result);
-			var index = 0;
-			var size = keys.length-1;
-			//Recursive function
-			incParts(res,store,keys,index,size);
-		}
-	});
+router.post('/add-check-out', async (req,res,next)=>{
+    try{
+        req.body.checkedIn = false;
+        const checkOut = req.body;
+        const results = await db.collection('checkOut').find({fNum:req.body.fNum,checkedIn:false}).toArray();
+        if(results.length>0){
+            res.status(409);
+            res.send('This form number is already being used!');
+        }else{
+            for(var i = 0 ; i< checkOut.parts.length ; i = i + 1){
+                var part_id = new ObjectID(checkOut.parts[i]._id);
+                var part_amountToCheckOut = checkOut.parts[i].amountToCheckOut;
+                await db.collection('inventory').updateOne({_id:part_id},{$inc:{amountCheckedOut:part_amountToCheckOut}});
+            }
+            await db.collection('checkOut').insertOne(checkOut);
+            
+        }
+        res.end();
+    }catch(err){
+        console.error('Error in /add-check-out endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
 });
 
 ////POST CHECK-IN-ALL////
-//Opposite of the incParts function that modifies the number checkout for each part after it is turned in
-//res:Response that will eventually be sent back to the user
-//store:Value that will be stored in checkout collection
-//keys:Stripped down store, that contains only the part _ids to be modified
-//index: The current index in the recursive function
-//size: The total number of parts that are to be added.
-function decParts(res,store,keys,index,size,checkOut_id){
-	part_id = new ObjectID(keys[index]);
-	data = JSON.parse(store[keys[index]]);
-	db.collection('inventory').update({_id:part_id},{$inc:{amountCheckedOut:-1*parseInt(data.amountToCheckOut,10)}}).then(function(result){	
-		if(size==index)
-		{
-			db.collection('checkOut').remove({_id:checkOut_id}).then(function(results){
-				db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
-				if(err) throw err;
-					res.send(results);
-				});
-			}).catch(function(err){
-				console.log(err);
-			});
-		}
-		else
-		{
-			index = index + 1;
-			decParts(res,store,keys,index,size,checkOut_id);
-		}
-	})
-	.catch(function(err){
-		console.log(err);
-	});
-}
-router.post('/check-in-all',function(req,res,next){
-	var checkOut_id = new ObjectID(req.body._id); //ID of the whole checkout
-	var part_id; //ID of a single part
-	//Make sure the checkout exists
-	db.collection('checkOut').find({_id:checkOut_id}).toArray().then(function(result){
-		if(result.length==0)
-		{
-			console.log('Bad ID for check in');
-			res.end();
-		}
-		else
-		{
-			store = Object.assign({},result[0]);
-			strip_result = Object.assign({},result[0]);
-			delete strip_result.fname;
-			delete strip_result.dateDue;
-			delete strip_result._id;
-			delete strip_result.dNum;
-			delete strip_result.fNum;
-			delete strip_result.checkedIn;
-			delete strip_result.lname;
-			var keys = Object.keys(strip_result);
-			var size = keys.length-1;
-			console.log(result[0]);
-			var index = 0;
-			decParts(res,store,keys,index,size,checkOut_id);
-		}
-	}).catch(function(error) {
-		console.log(error);
-	});
+router.post('/check-in-all',async (req,res,next)=>{
+    try{
+        const checkOutID = new ObjectID(req.body._id); //ID of the whole checkout
+        //Get the current checkout, add [0] to grab object out of the array of one.
+        var checkOut = await db.collection('checkOut').find({_id:checkOutID}).toArray();
+        checkOut = checkOut[0];
+        for(var i = 0; i< checkOut.parts.length; i = i + 1){
+            var partID = new ObjectID(checkOut.parts[i]._id);
+            var amountToCheckIn = -1*checkOut.parts[i].amountToCheckOut;
+            await db.collection('inventory').updateOne({_id:partID},{$inc:{amountCheckedOut:amountToCheckIn}});
+        }
+        await db.collection('checkOut').updateOne({_id:checkOutID},{$set:{checkedIn:true}});
+        res.end();
+    }
+    catch(err){
+        console.error('Error in /check-in-all endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
 });
 
 ////POST ADD-PART-POST-CHECK-OUT
-////Add parts to an already existing checkout
-//Spaghetti because currently part data is stored within the part collection and in the checkout collection, so have to modify both, and it is stored in stringified JSON LOL
-//Recursive function
-//res: The response to be sent back to the client
-//parts: The original data
-//index: Index of current part to be modified
-//CheckOut_id: ID of the current checkout
-//current_check_out: The current checkout
-function addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id,currentCheckOut)
-{
-	var part_id;
-	var data;
-	part_id = new ObjectID(keys[index]);
-	data = JSON.parse(parts[keys[index]]);
-	//increment the amount in the inventory database that is checked out
-	db.collection('inventory').update({_id:part_id},{$inc:{amountCheckedOut:parseInt(data.amountToCheckOut,10)}}).then(function(result){
-		var query = {};
-		var toReAdd;
-		console.log(currentCheckOut[0]);
-		console.log(keys[index]);
-		if(keys[index] in currentCheckOut)//If the part has been previously checked out increment the value instead of writing over it
-		{
-			currentCheckOutPart = JSON.parse(currentCheckOut[keys[index]]); //The current part as it is saved in the checkout
-			currentCheckOutPart.amountToCheckOut = parseInt(data.amountToCheckOut) + parseInt(currentCheckOutPart.amountToCheckOut); //Increment
-			toReAdd = JSON.stringify(currentCheckOutPart);
-			console.log(toReAdd);
-			console.log(currentCheckOutPart);
-		}
-		else //Just add it in if it doesn't exist
-		{
-			toReAdd = parts[keys[index]];
-		}
-		query[keys[index]] = toReAdd;
-		//Update in the checkout database
-		db.collection('checkOut').update({_id:checkOut_id},{$set:query}).then(function(result){
-			if(index == size)
-			{
-				db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
-				if(err) throw err;
-					res.send(results);
-				});
-			}
-			else
-			{
-				index = index + 1;
-				addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id,currentCheckOut);
-			}
-		})
-		.catch(function(err){
-			console.log(err);
-		});
-	}).catch(function(err){
-		console.log(err);
-	});
-}
 //Expects req to contain a list of parts in a checkout
-router.post('/add-part-post-check-out',function(req,res,next){
-	var checkOut_id = new ObjectID(req.body.checkOut_id);
-	parts = Object.assign({},req.body);
-	delete parts.checkOut_id;
-	var keys = Object.keys(parts);
-	var size = keys.length-1;
-	var index = 0;
-	db.collection('checkOut').find({_id:checkOut_id}).toArray(function(err,currentCheckOut){
-		addPartsExistingCheckOut(res,parts,keys,index,size,checkOut_id,currentCheckOut[0]);	
-	});
-	
+router.post('/add-part-post-check-out',async (req,res,next)=>{
+    try{
+        const checkOutID = new ObjectID(req.body.checkOut_id);
+        const newParts = req.body.parts;
+    
+        var checkOut = await db.collection('checkOut').find({_id:checkOutID}).toArray();
+        checkOut = checkOut[0];
+        const currentParts = checkOut.parts;
+        //Check to see if we already have some parts with the same _id checked out in the current check out.
+        for(var i = 0; i < newParts.length; i = i + 1){
+            const partID = new ObjectID(newParts[i]._id);
+            //Should we add a new entry
+            var newEntry = true;
+            for(var j = 0 ; j < currentParts.length; j = j + 1 ){
+                var currentPartID = new ObjectID(currentParts[j]._id);
+                if(currentPartID.equals(partID)){
+                    checkOut.parts[j].amountToCheckOut += newParts[i].amountToChecked; 
+                    newEntry = false;
+                }
+            }
+            if(newEntry === true){
+                checkOut.parts.push(newParts[i]);
+            }
+    
+    
+            //Increment in inventory no matter what
+            var amountToCheckOut = newParts[i].amountToCheckOut;
+            await db.collection('inventory').updateOne({_id:partID},{$inc:{amountCheckedOut:amountToCheckOut}});
+            
+        }
+        await db.collection('checkOut').deleteOne({_id:checkOutID});
+        await db.collection('checkOut').insertOne(checkOut);
+        res.end();
+    }
+    catch(err){
+        console.error('Error in /add-part-post-check-out endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
+
 });
 
 ////POST CHECK-IN-PART////
 //Check in a single part
-router.post('/check-in-part',function(req,res,next){
-	var part_id = new ObjectID(req.body.part_id);
-	var part_id_str = req.body.part_id;
-	var checkOut_id = new ObjectID(req.body.checkOut_id);
-	db.collection('checkOut').find({_id:checkOut_id}).toArray(function(err,result){
-		if(err)
-		{
-			console.log(err);
-			res.end();
-		}
-		if(result.length==0)
-		{
-			console.log('Bad ID for check in');
-			res.end();
-		}
-		result = result[0];
-		data = JSON.parse(result[part_id_str]);
-		db.collection('inventory').update({_id:part_id},{$inc:{amountCheckedOut:-1*parseInt(data.amountToCheckOut,10)}}).then(function(results){
-			console.log(result);
-			var unset = {}; //USEFUL TRICK turn string value into key
-			unset[part_id_str]="";
-			db.collection('checkOut').update({_id:checkOut_id},{$unset:unset}).then(function(results){
-				db.collection('checkOut').find({checkedIn:false}).toArray(function(err,results){
-				if(err) throw err;
-					res.send(results);
-				});
-			}).catch(function(err){
-				console.log('Error removing part of checkout');
-				console.log(err);
-			});
-		}).catch(function(err){
-			console.log('Error modifying the amount check out when checking in a part');
-			console.log(err);
-		});
-	});
+router.post('/check-in-part',async (req,res,next)=>{
+    try{
+        const partID = new ObjectID(req.body.part_id);
+        const checkOutID = new ObjectID(req.body.checkOut_id);
+    
+        var checkOut = await db.collection('checkOut').find({_id:checkOutID}).toArray();
+        checkOut = checkOut[0];
+        
+        var indexToRemove;
+        for(var i = 0; i < checkOut.parts.length; i = i + 1){
+            const otherCurrentPartID = new ObjectID(checkOut.parts[i]._id);
+             
+            if(otherCurrentPartID.equals(partID)) {
+                const amountToCheckIn = -1*checkOut.parts[i].amountToCheckOut;
+                await db.collection('inventory').updateOne({_id:partID},{$inc:{amountCheckedOut:amountToCheckIn}});
+                indexToRemove = i;
+            }
+        }
+        checkOut.parts.splice(indexToRemove,1);
+        await db.collection('checkOut').deleteOne({_id:checkOutID});
+        await db.collection('checkOut').insertOne(checkOut);
+        
+        res.end();
+    }
+    catch(err){
+        console.error('Error in /check-in-part endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
 });
 
 ////POST CHECK-CHECK-OUT////
 //Lets a user find their specific checkout using there lastname + dot number
 function createSearchCheckOut(req)
 {
-	var lname = req.body.lname;
-	var dNum = req.body.dNum;
-	var searchedLname = new RegExp(lname,'i');
-	return {dNum : dNum,
-			lname:searchedLname,
-			checkedIn:false
-			};
+    var lname = req.body.lname;
+    var dNum = req.body.dNum;
+    var searchedLname = new RegExp(lname,'i');
+    return {
+        dNum : dNum,
+        lname:searchedLname,
+        checkedIn:false
+    };
 }
 //Expects 
 //req.body.lname : Last name of user
 //req.body.dNum  : Dot number of user
-router.post('/check-check-out',function(req,res,next){
-	var query = createSearchCheckOut(req);
-	db.collection('checkOut').find(query).toArray(function(err,results){
-	if(err) throw err;
-		res.send(results[0]);
-	});
+router.post('/check-check-out',async (req,res,next)=>{
+    try{
+        var query = createSearchCheckOut(req);
+        var checkOut = await db.collection('checkOut').find(query).toArray();
+        checkOut = checkOut[0];
+        const parts = checkOut.parts;
+        
+        for(var i =0 ; i < parts.length; i = i + 1){
+            const partID = new ObjectID(parts[i]._id);
+            const partArray = await db.collection('inventory').find({_id:partID}).toArray();
+            checkOut.parts[i] = partArray[0];
+        }
+        res.send(checkOut);
+    }
+    catch(err){
+        console.error('Error in /check-check-out endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
 });
-
-
-//Create the necessary tables if they don't exist 
-function createAdmin()
-{
-	db.createCollection("admin",{strict:true},function(err,res){
-		if(err)
-		{
-			console.log("Admin collection already exists");
-		}
-		else
-		{
-			console.log("Admin collection created!");
-		}
-		createCheckOut();
-	});
-}
-function createInventory()
-{
-	db.createCollection("inventory",{strict:true},function(err,res){
-		if(err)
-		{
-			console.log("Inventory collection already exists");
-		}
-		else
-		{
-			console.log("inventory collection created");
-		}
-		createAdmin();
-	});
-}
-function createCheckOut()
-{
-	db.createCollection("checkOut",{strict:true},function(err,res){
-		if(err)
-		{
-			console.log("checkout collection already exists");
-		}
-		else
-		{
-			console.log("Checkout collection created!");
-		}
-		createCheckOutParts();
-	});
-}
-function createCheckOutParts()
-{
-	db.createCollection("checkOutParts",{strict:true},function(err,res){
-		if(err)
-		{
-			console.log("checkOutParts collection already exists");
-		}
-		else
-		{
-			console.log("checkOutParts collection created!");
-		}
-	});
-}
-
 
 module.exports = router;
