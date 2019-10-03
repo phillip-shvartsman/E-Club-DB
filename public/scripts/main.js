@@ -3,7 +3,6 @@
 /*global Mustache*/
 //Timout shared between functions
 var timeout = null;
-
 $(document).ready(function(){
     ////FUNCTIONS TO RUN AT START////
     //Bootstrap enable tooltip
@@ -102,7 +101,7 @@ $(document).ready(function(){
         var data = getFormData('#search-form');
         $.ajax({
             method: 'POST',
-            url: '/search',
+            url: '/parts/search',
             data: data,
             success: function( res,status ) {
                 //Flush search results
@@ -134,69 +133,66 @@ $(document).ready(function(){
     });
 
     ////Navigating between search and check-outs tabs////
-    $('#search-tab').on('click',function(){
+    $('#search-tab').on('click',async ()=> {
         //Clear results
         $('#search-table-body').empty();
         //Modify how the screen looks and what is displayed
         if(!$(this).hasClass('active'))
         {
-            $('#check-out-container').fadeOut('fast',function(){
-                $('#search-container').fadeIn('fast',function(){
-                    
-                });
-            });
+            await $('#check-out-container').fadeOut('fast').promise().done();
+            await $('#requests-container').fadeOut('fast').promise().done();
+            await $('#search-container').fadeIn('fast').promise().done();
             $('#top-nav').find('.active').removeClass('active');
             $('#top-nav').find('#search-tab').addClass('active');
         }
     });
-    $('#check-out-tab').on('click',function(){
+    $('#check-out-tab').on('click',async ()=>{
         if(!$(this).hasClass('active'))
         {
-            $('#search-container').fadeOut('fast',function(){
-                $('#check-out-container').fadeIn('fast',function(){
-                    
-                });
-            });
+            await $('#requests-container').fadeOut('fast').promise().done();
+            await $('#search-container').fadeOut('fast').promise().done();
+            await $('#check-out-container').fadeIn('fast').promise().done();
             $('#top-nav').find('.active').removeClass('active');
             $('#top-nav').find('#check-out-tab').addClass('active');          
+        }
+    });
+    $('#requests-tab').on('click',async ()=>{
+        if(!$(this).hasClass('active')){
+            await $('#check-out-container').fadeOut('fast').promise().done();
+            await $('#search-container').fadeOut('fast').promise().done();
+            await $('#requests-container').fadeIn('fast').promise().done();
+            $('#top-nav').find('.active').removeClass('active');
+            $('#top-nav').find('#requests-tab').addClass('active');    
         }
     });
 
     ////Check-out tab functions////
     //A user searching for their checkout
-    $('#check-check-out-button').on('click',function(){
-        const formData = getFormData('#check-check-out-form');
-        //Got to have first + last name
-        if(formData.lname==''||formData.dNum=='')
-        {
-            errorFlash('Missing information!');
-            return;
+    $('#check-check-out-form').submit(async (e)=>{
+        e.preventDefault();
+        try{
+            const formData = getFormData('#check-check-out-form');
+            const res = await $.ajax({
+                method: 'POST',
+                url: '/checkouts/check-check-out',
+                data: formData
+            });
+            $('#your-check-out').empty();
+            if(res.length==0)
+            {
+                errorFlash('Could not find your checkout!');
+                return;
+            }
         }
-        $.ajax({
-            method: 'POST',
-            url: '/check-check-out',
-            data: formData,
-            success: function( res,status ) {
-                $('#your-check-out').empty();
-                if(res.length==0)
-                {
-                    errorFlash('Could not find your checkout!');
-                    return;
-                }
-                successFlash('Found your checkout!');
-                addCheckoutResult(res);
-            },
-            error: function(err,status){
-                errorFlash('Error communicating with the server!');
-            },
-        });
+        catch(err){
+            errorFlash('Error communicating with the server!');
+        }
     });	
     function addCheckoutResult(result)
     {
         //Load from template and append
         var table_template = $('#checkout-table-template').html();
         $('#your-check-out').append(Mustache.to_html(table_template,result));
-        console.log(result);
         
         //Load entry template
         const entry_template = $('#checkout-entry-template').html();
@@ -208,5 +204,24 @@ $(document).ready(function(){
             $('[_id='+result._id+']').find('tbody').append(toAppend);
         } 
     }
-    
+
+    //Submit Request Button
+    $('#request-form').submit(async (e)=>{
+        e.preventDefault();
+        try{
+            const formData = getFormData('#request-form');
+            await $.ajax({
+                method:'POST',
+                url:'/requests/add',
+                data:formData
+            });
+            successFlash('Request submitted!');
+            await $('#before-request').fadeOut('fast').promise().done();
+            await $('after-request').fadeIn('fast').promise().done();
+        }
+        catch(err){
+            errorFlash('Could not submit request. There is a server issue.');
+        }
+    });
+
 });

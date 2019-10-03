@@ -18,7 +18,7 @@ a {
 	overflow:visible;
 	height:auto;
 }
-.check-box-all,.check-box-part,.plus-box{
+.check-box-all,.check-box-part,.plus-box, .icon{
 	cursor:pointer;
 	padding:5px;
 	margin-left:10px;

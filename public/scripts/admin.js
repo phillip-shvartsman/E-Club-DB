@@ -78,7 +78,7 @@ function searchAndRebuildTable(formID,tableID,rowClass,numRows = 100)
     const data = getFormData(formID);
     $.ajax({
         method: 'POST',
-        url: '/search',
+        url: '/parts/search',
         data: data,
         success: function( res,status ) {
             //Rebuild table
@@ -167,7 +167,6 @@ function addCheckoutResult(result)
     $('#all-checkouts-container').append(Mustache.to_html(table_template,result));	
     $('[_id='+result._id+']').find('thead').find('tr').append(Mustache.to_html(heading_template,result));
 
-    console.log(result);
     
     //Don't allow individual check in if there is only one entry in the checkout
     if(result.parts.length===1){
@@ -183,13 +182,12 @@ function addCheckoutResult(result)
 function getCheckOuts(){
     $.ajax({
         method: 'POST',
-        url: '/get-check-outs',
+        url: '/checkouts/get-check-outs',
         data:{},
         success: function(res,status) {
             //Clear table
             $('#all-checkouts-container').empty();
             if(res.length !== 0){
-                console.log(res);
                 //Loop through and add it
                 res.forEach(function(result){
                     addCheckoutResult(result);
@@ -206,6 +204,60 @@ function getCheckOuts(){
         },
     });
 }
+function buildRequestsTable(requests){
+    const template = $('#admin-request-entry').html();
+    for(let i = 0; i < requests.length ; i = i + 1){
+        $('#all-requests').append(Mustache.to_html(template,requests[i]));
+    }
+}
+async function getRequests(){
+    try {
+        $('#all-requests').empty();
+        const requests = await $.ajax({
+            method: 'POST',
+            url: '/requests/get-all',
+            data:{}});
+        
+        buildRequestsTable(requests);
+        setRequestTriggers();
+    }
+    catch(err){
+        errorFlash(err);
+    }
+}
+
+function setRequestTriggers(){
+    $('.request-email-icon').on('click',(e)=>{
+        try {
+            const email = $(e.currentTarget).attr('email');
+            $('#request-copy-email').text(email);
+            const copyText = document.getElementById('request-copy-email');
+            
+            copyText.select();
+            document.execCommand('copy');
+            successFlash('Email copied to clipboard.');
+        }
+        catch(err){
+            errorFlash(err);
+        }
+    });
+    $('.request-delete-icon').on('click',async (e)=>{
+        try {
+            const _id = $(e.currentTarget).attr('_id');
+            await $.ajax({
+                method: 'POST',
+                url: '/requests/delete',
+                data:{_id:_id}
+            });
+            successFlash('Request deleted.');
+            getRequests();
+        }
+        catch(err){
+            errorFlash(err);
+        }
+    });
+}
+
 //Checkout form triggers only run when the checkouts are fetched or another is added
 function setCheckOutTriggers(){
     //Check in all entries in a checkout
@@ -220,7 +272,7 @@ function setCheckOutTriggers(){
                 confirm: function () {
                     $.ajax({
                         method: 'POST',
-                        url: '/check-in-all',
+                        url: '/checkouts/check-in-all',
                         data: {
                             _id:_id
                         },
@@ -251,7 +303,7 @@ function setCheckOutTriggers(){
                 confirm: function () {
                     $.ajax({
                         method: 'POST',
-                        url: '/check-in-part',
+                        url: '/checkouts/check-in-part',
                         data: {
                             part_id:part_id,
                             checkOut_id:checkOut_id
@@ -297,7 +349,7 @@ function setCheckOutTriggers(){
                 confirm: function () {
                     $.ajax({
                         method: 'POST',
-                        url: '/add-part-post-check-out',
+                        url: '/checkouts/add-part-post-check-out',
                         contentType: 'application/json',
                         data: JSON.stringify(formData),
                         success: function( res,status ) {
@@ -378,6 +430,10 @@ $(document).ready(function(){
         //Grab all of the check-outs
         getCheckOuts();
     });
+
+    $('#requests-tab').on('click',()=>{
+        getRequests();
+    });
     
     //Search form for checkout parts
     $('#check-out-cat,#check-out-partName,#check-out-subCat,#check-out-val,#check-out-partNum,#check-out-loc').on('input',function(){
@@ -407,11 +463,10 @@ $(document).ready(function(){
             parts.push({_id:partID,amountToCheckOut:amountToCheckOut});
         });
         formData.parts = parts;
-        console.log(formData);
         //Send that to the server
         $.ajax({
             method: 'POST',
-            url: '/add-check-out',
+            url: '/checkouts/add-check-out',
             contentType: 'application/json',
             data: JSON.stringify(formData),
             success: function( res,status ) {
@@ -440,7 +495,7 @@ $(document).ready(function(){
         const partID = $('#storePart').attr('_id');
         $.ajax({
             method: 'POST',
-            url: '/get-single-part',
+            url: '/parts/get-single-part',
             data: {_id:partID},
             success: function( res,status ) {
                 $('#mod-cat').val(res.cat);
@@ -467,7 +522,7 @@ $(document).ready(function(){
         data._id = $('#storePart').attr('_id');
         $.ajax({
             method: 'POST',
-            url: '/modify',
+            url: '/parts/modify',
             data: data,
             success: function( res,status ) {
                 successFlash('Part was modified!');
@@ -497,7 +552,7 @@ $(document).ready(function(){
                 confirm: function () {
                     $.ajax({
                         method: 'POST',
-                        url: '/delete',
+                        url: '/parts/delete',
                         data: {
                             _id : uniq_id
                         },
@@ -549,7 +604,7 @@ $(document).ready(function(){
         }
         $.ajax({
             method: 'POST',
-            url: '/add',
+            url: '/parts/add',
             data: data,
             success: function( res,status ) {
                 successFlash('Part was added!');

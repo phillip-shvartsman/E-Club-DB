@@ -28,6 +28,8 @@ block content
 			a(class="nav-link active" href="#" id='search-tab') Search
 		li(class="nav-item")
 			a(class="nav-link" href="#" id="check-out-tab") Check-outs
+		li(class="nav-item")
+			a(class="nav-link" href="#" id="requests-tab") Requests 
 	#search-container.container
 		if user
 			div(class="modal fade" id="modify-delete-modal" value="")
@@ -237,12 +239,12 @@ block content
 				#input-row.form-row
 					div(class="form-group col")
 						label(for="lname") Last Name
-						input(type="text" name="lname" class="form-control" placeholder="Last Name")
+						input(type="text" name="lname" class="form-control" placeholder="Last Name" required)
 					div(class="form-group col")
 						label(for="dNum") Dot #
-						input(type="number" name="dNum" class="form-control" placeholder="Dot #")
+						input(type="number" name="dNum" class="form-control" placeholder="Dot #" required)
 				div(class="form-row")
-					button(id="check-check-out-button" type="button" class="btn btn-primary") Search
+					button(id="check-check-out-button" type="submit" class="btn btn-primary") Search
 			div(id='your-check-out')
 		if user
 			h3(class="my-2") All Checkouts
@@ -262,6 +264,43 @@ block content
 							label(for="fNum") Form Number
 							input(type="number" name="fNum" class="form-control filter" placeholder="Form #")
 			div(id="all-checkouts-container")
+	div( class="container" id="requests-container" style="display:none")
+		if !user
+			#before-request
+				p(class="py-2") Hello! Please use the form below to request parts for the E-Club to buy. Please note a request is <strong>not guaranteed</strong> to be filled. You will receive an email if your request has been filled. All requests that have not been fulfilled will be notified a week prior to the event.
+				p(class="pb-2") In your request please be as <strong>detailed as possible and realistic</strong>. Include part numbers when possible. Keep in mind that <strong>we are a volunteer organization</strong> we can not purchase expensive electronic equipment for everyone. If you provide a <strong>source with prices such as an Arrow or Digikey</strong> for your request that will be very helpful as well.
+				form(id="request-form")
+					#input-row.form-row
+						div(class="form-group col")
+							label(for="fname") First Name
+							input(type="text" name="fname" class="form-control" placeholder="First Name" required)
+						div(class="form-group col")
+							label(for="lname") Last Name
+							input(type="text" name="lname" class="form-control" placeholder="Last Name" required)
+						div(class="form-group col")
+							label(for="dNum") Dot #
+							input(type="number" name="dNum" class="form-control" placeholder="Dot #" required)
+						div(class="form-group col")
+							label(for="email") Email
+							input(type="email" name="email" class="form-control" placeholder="Email" required)
+						div(class="form-group col")
+							label(for="for") What is this request for?
+							select(class="form-control" name="for" required)
+								option(value="Makeathon") Makeathon
+								option(value="Hackathon") Hackathon
+								option(value="Personal Project") Personal Project
+					#input-row.form-row
+						label(for="requestText" required) Request:
+						textarea(class="form-control" rows="5" id="request-text" name="requestText" required)
+					#input-row.form-row.pt-3
+						div.col-md-4
+						div.col-md-4.text-center
+							button(type="submit" id="submit-request-button" class="btn btn-primary") Submit Your Request
+						div.col-md-4
+			#after-request(style='display:none')
+				p Thank you for your request! Please be on the look out for future emails!
+		if user
+			#all-requests.mt-3
 	//- Mustache JS Templates
 	script(id="result-row-template" type="template")
 		tr(class="result-row" value="{{value}}")
@@ -324,3 +363,15 @@ block content
 				td {{loc}}
 				//- UNESCAPED HTML
 				td {{{check_part}}} 
+		script(id="admin-request-entry" type="template")
+			#request-copy-email(style='display:none')
+			table(class="table table-sm check-out-table mt-3")
+				th {{fname}} {{lname}}
+				th .{{dNum}}
+				th {{email}}
+				th {{for}}
+				th 
+					img(class="request-email-icon icon" email="{{email}}" src="/images/email.png")
+					img(class="request-delete-icon icon" _id='{{_id}}' src="/images/delete.png")
+				tr
+					td(colspan="5") {{requestText}}
