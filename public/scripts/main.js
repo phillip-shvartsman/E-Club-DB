@@ -172,20 +172,24 @@ $(document).ready(function(){
         e.preventDefault();
         try{
             const formData = getFormData('#check-check-out-form');
-            const res = await $.ajax({
+            const result = await $.ajax({
                 method: 'POST',
                 url: '/checkouts/check-check-out',
                 data: formData
             });
+            console.log(result);
             $('#your-check-out').empty();
-            if(res.length==0)
+            if(result.length==0)
             {
                 errorFlash('Could not find your checkout!');
                 return;
             }
+            else{
+                addCheckoutResult(result);
+            }
         }
         catch(err){
-            errorFlash('Error communicating with the server!');
+            errorFlash('Error communicating with the server.');
         }
     });	
     function addCheckoutResult(result)
@@ -217,7 +221,7 @@ $(document).ready(function(){
             });
             successFlash('Request submitted!');
             await $('#before-request').fadeOut('fast').promise().done();
-            await $('after-request').fadeIn('fast').promise().done();
+            await $('#after-request').fadeIn('fast').promise().done();
         }
         catch(err){
             errorFlash('Could not submit request. There is a server issue.');
