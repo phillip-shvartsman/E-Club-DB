@@ -9,15 +9,11 @@ const db = mongoDB.get();
 
 router.use(require('cookie-parser')());
 router.use(require('body-parser').urlencoded({ extended: true }));
-router.use(require('express-session')({ secret: process.env.SESSIONSECRET, resave: false, saveUninitialized: false }));
 
-const passport = require('passport');
-require('../auth/auth');
-router.use(passport.initialize());
-router.use(passport.session());
+
+const auth = require('../auth/auth');
 var ObjectID = require('mongodb').ObjectID;
 
-const isLoggedIn = require('../auth/isLoggedIn');
 
 router.post('/add',async (req,res,next)=>{
     try {
@@ -31,7 +27,7 @@ router.post('/add',async (req,res,next)=>{
     }
 });
 
-router.post('/get-all',isLoggedIn,async (req,res,next)=>{
+router.post('/get-all',auth.validateToken,auth.validateAdmin,async (req,res,next)=>{
     try {
         const results = await db.collection('requests').find({}).toArray();
         res.send(results);
@@ -43,7 +39,7 @@ router.post('/get-all',isLoggedIn,async (req,res,next)=>{
     }
 });
 
-router.post('/delete',isLoggedIn,async (req,res,next)=>{
+router.post('/delete',auth.validateToken,auth.validateAdmin,async (req,res,next)=>{
     try {
         const _id = new ObjectID(req.body._id);
         await db.collection('requests').deleteOne({_id:_id});

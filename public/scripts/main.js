@@ -228,4 +228,20 @@ $(document).ready(function(){
         }
     });
 
+    $('#login-form').submit(async(e)=>{
+        e.preventDefault();
+        try{
+            const formData = getFormData('#login-form');
+            await $.ajax({
+                method:'POST',
+                url:'/login',
+                data:formData
+            });
+            location.reload();
+        }
+        catch(err){
+            errorFlash('Unable to login, check that you have the correct username and password.');
+        }
+    });
+
 });

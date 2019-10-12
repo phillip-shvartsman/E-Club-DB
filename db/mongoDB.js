@@ -1,5 +1,6 @@
 ////MONGODB CLIENT////
 var mongoClient = require('mongodb').MongoClient;
+const bcrypt = require('bcrypt');
 
 //The db itself.
 let db = null;
@@ -26,11 +27,12 @@ module.exports.connect = () => new mongoClient(db_url,
         }
 
         //On server restart read .env file to set username and password
-        if(await db.listCollections({name:'admin'}).hasNext()){
-            await db.dropCollection('admin');
+        if(await db.listCollections({name:'users'}).hasNext()){
+            await db.dropCollection('users');
         }
-        await db.createCollection('admin',{strict:true});
-        await db.collection('admin').insertOne({id:1,username:process.env.USERNAME,password:process.env.PASSWORD});
+        await db.createCollection('users',{strict:true});
+        const hash = await bcrypt.hash(process.env.PASSWORD,10);
+        await db.collection('users').insertOne({username:process.env.USERNAME,password:hash,admin:true});
 
         //Create checkout collection
         if(!await db.listCollections({name:'checkOut'}).hasNext()){

@@ -9,14 +9,8 @@ const db = mongoDB.get();
 
 router.use(require('cookie-parser')());
 router.use(require('body-parser').urlencoded({ extended: true }));
-router.use(require('express-session')({ secret: process.env.SESSIONSECRET, resave: false, saveUninitialized: false }));
 
-const passport = require('passport');
-require('../auth/auth');
-router.use(passport.initialize());
-router.use(passport.session());
-
-const isLoggedIn = require('../auth/isLoggedIn');
+const auth = require('../auth/auth');
 
 //ObjectID class used to create mongo unique ID objects
 var ObjectID = require('mongodb').ObjectID;
@@ -25,7 +19,7 @@ var ObjectID = require('mongodb').ObjectID;
 
 ////POST GET-CHECK-OUTS////
 //Simple gets everything in the checkouts collection
-router.post('/get-check-outs',isLoggedIn, async(req,res,next)=>{
+router.post('/get-check-outs',auth.validateToken,auth.validateAdmin, async(req,res,next)=>{
     try{
         var results = await db.collection('checkOut').find({checkedIn:false}).toArray();
         for(var i = 0 ; i < results.length; i = i + 1){
@@ -46,7 +40,7 @@ router.post('/get-check-outs',isLoggedIn, async(req,res,next)=>{
 
 ////POST ADD-CHECK-OUT////
 //Modify the part data to account for the change in the amount checked out
-router.post('/add-check-out',isLoggedIn, async (req,res,next)=>{
+router.post('/add-check-out',auth.validateToken,auth.validateAdmin, async (req,res,next)=>{
     try{
         req.body.checkedIn = false;
         const checkOut = req.body;
@@ -72,7 +66,7 @@ router.post('/add-check-out',isLoggedIn, async (req,res,next)=>{
 });
 
 ////POST CHECK-IN-ALL////
-router.post('/check-in-all',isLoggedIn,async (req,res,next)=>{
+router.post('/check-in-all',auth.validateToken,auth.validateAdmin,async (req,res,next)=>{
     try{
         const checkOutID = new ObjectID(req.body._id); //ID of the whole checkout
         //Get the current checkout, add [0] to grab object out of the array of one.
@@ -95,7 +89,7 @@ router.post('/check-in-all',isLoggedIn,async (req,res,next)=>{
 
 ////POST ADD-PART-POST-CHECK-OUT
 //Expects req to contain a list of parts in a checkout
-router.post('/add-part-post-check-out',isLoggedIn,async (req,res,next)=>{
+router.post('/add-part-post-check-out',auth.validateToken,auth.validateAdmin,async (req,res,next)=>{
     try{
         const checkOutID = new ObjectID(req.body.checkOut_id);
         const newParts = req.body.parts;
@@ -139,7 +133,7 @@ router.post('/add-part-post-check-out',isLoggedIn,async (req,res,next)=>{
 
 ////POST CHECK-IN-PART////
 //Check in a single part
-router.post('/check-in-part',isLoggedIn,async (req,res,next)=>{
+router.post('/check-in-part',auth.validateToken,auth.validateAdmin,async (req,res,next)=>{
     try{
         const partID = new ObjectID(req.body.part_id);
         const checkOutID = new ObjectID(req.body.checkOut_id);

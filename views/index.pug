@@ -5,10 +5,10 @@ block content
 	p Welcome to #{title}
 	div(id="successFlash" class="alert alert-success" style="display:none; z-index:500; position:fixed;")
 	div(id="errorFlash" class="alert alert-danger" style="display:none; z-index:500; position:fixed;")
-	if !user
+	if !admin
 		button(id="show-login" type="button" class="btn btn-primary") Login for officers
 		div(class="container" style="display:none" id="login-container")
-			form(id="login-form" action="/login" method="post")
+			form(id="login-form")
 				#login-row.form-row
 					div(class="form-group col")
 						label(for="username") Username
@@ -19,7 +19,7 @@ block content
 				div(class="form-row")
 					label(for="login")
 					button(id="login" type="submit" class="btn btn-primary") Login
-	if user
+	if admin
 		div(class="form-row")
 					label(for="logout")
 					button(id="logout" type="button" class="btn btn-primary") Logout
@@ -31,7 +31,7 @@ block content
 		li(class="nav-item")
 			a(class="nav-link" href="#" id="requests-tab") Requests 
 	#search-container.container
-		if user
+		if admin
 			div(class="modal fade" id="modify-delete-modal" value="")
 				div(id="storePart" value="" style="display:none")
 				div(class="modal-dialog")
@@ -107,7 +107,7 @@ block content
 					button(id="addPart" type="button" class="m-3 btn btn-primary") Add
 					label(for="clearAddPart")
 					button(id="clearAddPart" type="button" class="m-3 btn btn-info") Clear/Get All
-		if !user
+		if !admin
 			#search-form-container.container.mt-3
 				form(id="search-form" class="mb-3")
 					#input-row.form-row
@@ -144,7 +144,7 @@ block content
 					th Notes
 			tbody(id='search-table-body')
 	div( class="container" id="check-out-container" style="display:none")
-		if user
+		if admin
 			div(class="modal fade" id="qtyModal")
 				div(id="checkOutStorePart" value="" style="display:none")
 				div(class="modal-dialog")
@@ -159,7 +159,7 @@ block content
 						div(class="form-row")
 							label(for="addQty")
 							button(id="addQty" type="button" class="m-3 btn btn-primary") Add
-		if user
+		if admin
 			h4 1. Enter name of the person checking out
 			form(id="add-check-out-form" class="mb-3")
 				#input-row.form-row
@@ -233,7 +233,7 @@ block content
 			h4 3. Once satisfied click below to finalize.
 			div(class="form-row")
 					button(id="addCheckOutButton" type="button" class="btn btn-primary") Add Check Out
-		if !user
+		if !admin
 			h5(class="my-2") Enter Your Name and Dot Number to see your current check out.
 			form(id="check-check-out-form" class="mb-3")
 				#input-row.form-row
@@ -246,7 +246,7 @@ block content
 				div(class="form-row")
 					button(id="check-check-out-button" type="submit" class="btn btn-primary") Search
 			div(id='your-check-out')
-		if user
+		if admin
 			h3(class="my-2") All Checkouts
 				h5 (Hitting a plus on a checkout will add the current check-out to it)
 				form(id="filter-checkouts")
@@ -265,7 +265,7 @@ block content
 							input(type="number" name="fNum" class="form-control filter" placeholder="Form #")
 			div(id="all-checkouts-container")
 	div( class="container" id="requests-container" style="display:none")
-		if !user
+		if !admin
 			#before-request
 				p(class="py-2") Hello! Please use the form below to request parts for the E-Club to buy. Please note a request is <strong>not guaranteed</strong> to be filled. You will receive an email if your request has been filled. All requests that have not been fulfilled will be notified a week prior to the event.
 				p(class="pb-2") In your request please be as <strong>detailed as possible and realistic</strong>. Include part numbers when possible. Keep in mind that <strong>we are a volunteer organization</strong> we can not purchase expensive electronic equipment for everyone. If you provide a <strong>source with prices such as an Arrow or Digikey</strong> for your request that will be very helpful as well.
@@ -299,7 +299,7 @@ block content
 						div.col-md-4
 			#after-request.mt-3(style='display:none')
 				p Thank you for your request! Please be on the look out for future emails!
-		if user
+		if admin
 			#all-requests.mt-3
 	//- Mustache JS Templates
 	script(id="result-row-template" type="template")
@@ -328,7 +328,7 @@ block content
 			td {{partNum}}
 			td {{val}}
 	//- Mustache JS Templates that only are available for admin.js
-	if user
+	if admin
 		script(id="admin-row-template" type="template")
 			tr(class="{{optClass}}" _id="{{_id}}")
 				td {{partName}}
