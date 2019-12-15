@@ -15,194 +15,164 @@ const auth = require('../auth/auth');
 //ObjectID class used to create mongo unique ID objects
 var ObjectID = require('mongodb').ObjectID;
 
-//////CHECKOUT ENDPOINTS//////
-
-////POST GET-CHECK-OUTS////
-//Simple gets everything in the checkouts collection
-router.post('/get-check-outs',auth.validateToken,auth.validateAdmin, async(req,res,next)=>{
-    try{
-        var results = await db.collection('checkOut').find({checkedIn:false}).toArray();
-        for(var i = 0 ; i < results.length; i = i + 1){
-            var checkOut = Object.assign({},results[i]);
-            for(var j =0 ; j < checkOut.parts.length; j = j + 1){
-                const partID = new ObjectID(checkOut.parts[j]._id);
-                const partArray = await db.collection('inventory').find({_id:partID}).toArray();
-                results[i].parts[j] = partArray[0];
+router.post('/add-unapproved',auth.validateToken,async(req,res,next)=>{
+    const userID = new ObjectID(res.locals.decoded._id);
+    const partID = new ObjectID(req.body._id);
+    //May come as text from the client
+    const qty = parseInt(req.body.qty);
+    try {
+        //Check if the part exists in the inventory DB
+        const parts = await db.collection('inventory').find({_id:partID}).toArray();
+        if(parts.length>0){
+            //Check to see if the user already has this part added to their checkout
+            const matchingParts = await db.collection('checkOut').find({partID:partID,userID:userID,type:'unapproved'}).toArray();
+            if(matchingParts.length>0){
+                await db.collection('checkOut').updateOne({partID:partID,userID:userID,type:'unapproved'},{$inc:{amountToCheckOut:qty}});
+                res.end();
+            }else{
+                await db.collection('checkOut').insertOne({partID:partID,userID:userID,type:'unapproved',amountToCheckOut:qty});
+                res.end();
             }
-        }
-        res.send(results);
-    }catch(err){
-        console.error('Error in /get-check-outs endpoint.');
-        console.error(err);
-        res.status(500).end();
-    }
-});
-
-////POST ADD-CHECK-OUT////
-//Modify the part data to account for the change in the amount checked out
-router.post('/add-check-out',auth.validateToken,auth.validateAdmin, async (req,res,next)=>{
-    try{
-        req.body.checkedIn = false;
-        const checkOut = req.body;
-        const results = await db.collection('checkOut').find({fNum:req.body.fNum,checkedIn:false}).toArray();
-        if(results.length>0){
-            res.status(409);
-            res.send('This form number is already being used!');
         }else{
-            for(var i = 0 ; i< checkOut.parts.length ; i = i + 1){
-                var part_id = new ObjectID(checkOut.parts[i]._id);
-                var part_amountToCheckOut = checkOut.parts[i].amountToCheckOut;
-                await db.collection('inventory').updateOne({_id:part_id},{$inc:{amountCheckedOut:part_amountToCheckOut}});
-            }
-            await db.collection('checkOut').insertOne(checkOut);
-            
+            throw new Error('Part with that _id doesn\'t exist');
         }
+    }catch(err){
+        console.error('Error in /add-unapproved endpoint.');
+        console.error(err);
+        res.status(500).send(err).end();
+    }
+});
+
+//A checkout is stored in the db with just _id's and a quantity. This function gets part details for each checkout and sends it to the client.
+async function getPartDetails(checkOuts){
+    const detailedCheckOuts = [];
+    for(let i = 0; i<checkOuts.length;i = i + 1){
+        const partID = new ObjectID(checkOuts[i].partID);
+        const detailedCheckOut = await db.collection('inventory').find({_id:partID}).toArray();
+        detailedCheckOut[0].amountToCheckOut = checkOuts[i].amountToCheckOut;
+        detailedCheckOut[0].type = checkOuts[i].type;
+        detailedCheckOut[0].userID = checkOuts[i].userID;
+        detailedCheckOut[0].partID = detailedCheckOut[0]._id;
+        detailedCheckOut[0]._id = checkOuts[i]._id;
+        detailedCheckOuts.push(detailedCheckOut[0]);
+    }
+    return detailedCheckOuts;
+}
+router.post('/approve-part',auth.validateToken,auth.validateAdmin,async(req,res,next)=>{
+    const checkOutID = new ObjectID(req.body.checkOutID);
+    try{
+        await db.collection('checkOut').updateOne({_id:checkOutID,type:'unapproved'},{$set:{type:'approved'}});
         res.end();
     }catch(err){
-        console.error('Error in /add-check-out endpoint.');
+        console.error('Error in /approve-part endpoint.');
         console.error(err);
         res.status(500).end();
     }
 });
-
-////POST CHECK-IN-ALL////
-router.post('/check-in-all',auth.validateToken,auth.validateAdmin,async (req,res,next)=>{
+router.post('/unapprove-part',auth.validateToken,auth.validateAdmin,async (req,res,next) =>{
+    const checkOutID = new ObjectID(req.body.checkOutID);
     try{
-        const checkOutID = new ObjectID(req.body._id); //ID of the whole checkout
-        //Get the current checkout, add [0] to grab object out of the array of one.
-        var checkOut = await db.collection('checkOut').find({_id:checkOutID}).toArray();
-        checkOut = checkOut[0];
-        for(var i = 0; i< checkOut.parts.length; i = i + 1){
-            var partID = new ObjectID(checkOut.parts[i]._id);
-            var amountToCheckIn = -1*checkOut.parts[i].amountToCheckOut;
-            await db.collection('inventory').updateOne({_id:partID},{$inc:{amountCheckedOut:amountToCheckIn}});
-        }
-        await db.collection('checkOut').updateOne({_id:checkOutID},{$set:{checkedIn:true}});
+        await db.collection('checkOut').updateOne({_id:checkOutID,type:'approved'},{$set:{type:'unapproved'}});
         res.end();
-    }
-    catch(err){
-        console.error('Error in /check-in-all endpoint.');
+    }catch(err){
+        console.error('Error in /unapprove-part endpoint.');
         console.error(err);
         res.status(500).end();
     }
 });
-
-////POST ADD-PART-POST-CHECK-OUT
-//Expects req to contain a list of parts in a checkout
-router.post('/add-part-post-check-out',auth.validateToken,auth.validateAdmin,async (req,res,next)=>{
+router.post('/set-part-out',auth.validateToken,auth.validateAdmin,async(req,res,next)=>{
+    const checkOutID = new ObjectID(req.body.checkOutID);
     try{
-        const checkOutID = new ObjectID(req.body.checkOut_id);
-        const newParts = req.body.parts;
-    
-        var checkOut = await db.collection('checkOut').find({_id:checkOutID}).toArray();
-        checkOut = checkOut[0];
-        const currentParts = checkOut.parts;
-        //Check to see if we already have some parts with the same _id checked out in the current check out.
-        for(var i = 0; i < newParts.length; i = i + 1){
-            const partID = new ObjectID(newParts[i]._id);
-            //Should we add a new entry
-            var newEntry = true;
-            for(var j = 0 ; j < currentParts.length; j = j + 1 ){
-                var currentPartID = new ObjectID(currentParts[j]._id);
-                if(currentPartID.equals(partID)){
-                    checkOut.parts[j].amountToCheckOut += newParts[i].amountToChecked; 
-                    newEntry = false;
-                }
-            }
-            if(newEntry === true){
-                checkOut.parts.push(newParts[i]);
-            }
-    
-    
-            //Increment in inventory no matter what
-            var amountToCheckOut = newParts[i].amountToCheckOut;
-            await db.collection('inventory').updateOne({_id:partID},{$inc:{amountCheckedOut:amountToCheckOut}});
-            
+        const checkOut = await db.collection('checkOut').find({_id:checkOutID,type:'approved'}).toArray();
+        if(checkOut.length < 1){
+            throw new Error('Invalid checkout ID');
         }
-        await db.collection('checkOut').deleteOne({_id:checkOutID});
-        await db.collection('checkOut').insertOne(checkOut);
+        const partID = new ObjectID(checkOut[0].partID);
+        const amountToCheckOut = parseInt(checkOut[0].amountToCheckOut);
+        await db.collection('inventory').updateOne({_id:partID},{$inc:{amountCheckedOut:amountToCheckOut}});
+        await db.collection('checkOut').updateOne({_id:checkOutID,type:'approved'},{$set:{type:'out'}});
         res.end();
-    }
-    catch(err){
-        console.error('Error in /add-part-post-check-out endpoint.');
+    }catch(err){
+        console.error('Error in /set-part-out endpoint.');
         console.error(err);
         res.status(500).end();
     }
-
 });
-
-////POST CHECK-IN-PART////
-//Check in a single part
-router.post('/check-in-part',auth.validateToken,auth.validateAdmin,async (req,res,next)=>{
+router.post('/check-part-in',auth.validateToken,auth.validateAdmin,async(req,res,next)=>{
+    const checkOutID = new ObjectID(req.body.checkOutID);
     try{
-        const partID = new ObjectID(req.body.part_id);
-        const checkOutID = new ObjectID(req.body.checkOut_id);
-    
-        var checkOut = await db.collection('checkOut').find({_id:checkOutID}).toArray();
-        checkOut = checkOut[0];
-        
-        var indexToRemove;
-        for(var i = 0; i < checkOut.parts.length; i = i + 1){
-            const otherCurrentPartID = new ObjectID(checkOut.parts[i]._id);
-             
-            if(otherCurrentPartID.equals(partID)) {
-                const amountToCheckIn = -1*checkOut.parts[i].amountToCheckOut;
-                await db.collection('inventory').updateOne({_id:partID},{$inc:{amountCheckedOut:amountToCheckIn}});
-                indexToRemove = i;
-            }
+        const checkOut = await db.collection('checkOut').find({_id:checkOutID,type:'out'}).toArray();
+        if(checkOut.length < 1){
+            throw new Error('Invalid checkout ID');
         }
-        checkOut.parts.splice(indexToRemove,1);
-        await db.collection('checkOut').deleteOne({_id:checkOutID});
-        await db.collection('checkOut').insertOne(checkOut);
-        
+        const partID = new ObjectID(checkOut[0].partID);
+        const amountToCheckOut = parseInt(checkOut[0].amountToCheckOut);
+        await db.collection('inventory').updateOne({_id:partID},{$inc:{amountCheckedOut:-1*amountToCheckOut}});
+        await db.collection('checkOut').updateOne({_id:checkOutID,type:'out'},{$set:{type:'returned'}});
         res.end();
+    }catch(err){
+        console.error('Error in /check-part-in endpoint.');
+        console.error(err);
+        res.status(500).end();
     }
-    catch(err){
-        console.error('Error in /check-in-part endpoint.');
+});
+router.post('/get-user-check-outs',auth.validateToken,async(req,res,next)=>{
+    const userID = new ObjectID(res.locals.decoded._id);
+    try{
+        const checkOuts = await db.collection('checkOut').find({userID:userID}).toArray();
+        const detailedCheckOuts = await getPartDetails(checkOuts);
+        res.send(detailedCheckOuts);
+    }catch(err){
+        console.error('Error in /get-user-checkouts endpoint.');
         console.error(err);
         res.status(500).end();
     }
 });
 
-////POST CHECK-CHECK-OUT////
-//Lets a user find their specific checkout using there lastname + dot number
-function createSearchCheckOut(req)
-{
-    var lname = req.body.lname;
-    var dNum = req.body.dNum;
-    var searchedLname = new RegExp(lname,'i');
-    return {
-        dNum : dNum,
-        lname:searchedLname,
-        checkedIn:false
-    };
-}
-//Expects 
-//req.body.lname : Last name of user
-//req.body.dNum  : Dot number of user
-router.post('/check-check-out',async (req,res,next)=>{
+router.post('/modify-unapproved',auth.validateToken,async(req,res,next)=>{
+    const userID = new ObjectID(res.locals.decoded._id);
+    const checkOutID = new ObjectID(req.body._id);
+    const qty = parseInt(req.body.qty);
     try{
-        var query = createSearchCheckOut(req);
-        var checkOut = await db.collection('checkOut').find(query).toArray();
-
-        //No checkouts matching the provided information
-        if(checkOut.length === 0){
-            res.send();
-        }
-        else {
-            checkOut = checkOut[0];
-            const parts = checkOut.parts;
-            
-            for(var i =0 ; i < parts.length; i = i + 1){
-                const partID = new ObjectID(parts[i]._id);
-                const partArray = await db.collection('inventory').find({_id:partID}).toArray();
-                checkOut.parts[i] = partArray[0];
+        const results = await db.collection('checkOut').find({_id:checkOutID,type:'unapproved'}).toArray();
+        if(results.length<1){
+            throw new Error('Checkout ID does not exist.');
+        }else{
+            const checkOut = results[0];
+            if(!userID.equals(new ObjectID(checkOut.userID))){
+                throw new Error('The checkout that is being modified is not owned by the modifying user.');
+            }else{
+                await db.collection('checkOut').updateOne({userID:userID,_id:checkOutID,type:'unapproved'},{$set:{amountToCheckOut:qty}});
+                res.end();
             }
-            res.send(checkOut);
         }
     }
     catch(err){
-        console.error('Error in /check-check-out endpoint.');
+        console.error('Error in /modify-unapproved endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
+});
+
+router.post('/remove-unapproved',auth.validateToken, async(req,res,next)=>{
+    const userID = new ObjectID(res.locals.decoded._id);
+    const checkOutID = new ObjectID(req.body._id);
+    try{
+        const results = await db.collection('checkOut').find({_id:checkOutID,type:'unapproved'}).toArray();
+        if(results.length<1){
+            throw new Error('Checkout ID does not exist.');
+        }else{
+            const checkOut = results[0];
+            if(!userID.equals(new ObjectID(checkOut.userID))){
+                throw new Error('The checkout that is being modified is not owned by the modifying user.');
+            }else{
+                await db.collection('checkOut').deleteOne({userID:userID,_id:checkOutID,type:'unapproved'});
+                res.end();
+            }
+        }
+    }
+    catch(err){
+        console.error('Error in /modify-unapproved endpoint.');
         console.error(err);
         res.status(500).end();
     }

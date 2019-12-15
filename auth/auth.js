@@ -6,26 +6,24 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 
-async function findByUsername(username){
+async function findByEmail(email){
 
     const users = await db.collection('users').find({}).toArray();
-    console.log(username);
     for (let i = 0, len = users.length; i < len; i++) {
         const user = users[i];
-        if (user.username === username) {
+        if (user.email === email) {
             return user;
         }
     }
 }
 //Express Middleware function
 async function checkLoginCredentials(req,res,next){
-    const user = await findByUsername(req.body.username);
+    const user = await findByEmail(req.body.email);
     if(user){
         const valid = await bcrypt.compare(req.body.password,user.password);
         if(valid){
             //Don't send password in the JWT
             delete user.password;
-            console.log(user);
             const newJWT = jwt.sign(user,process.env.COOKIESECRET,{ expiresIn: '2h' });
             res.cookie('jwt',newJWT);
             res.end();
@@ -63,17 +61,69 @@ async function renderPage(req,res,next){
     const incomingJWT = req.cookies.jwt;
     try {
         const decoded = jwt.verify(incomingJWT,process.env.COOKIESECRET);
-        res.render('index', { title: 'Electronics Club @ OSU', user:true, admin:decoded.admin });
+        res.render('index', { title: 'Electronics Club @ OSU', user:true, admin:decoded.admin,email:decoded.email });
     } catch(err){
         console.error('Problem decoding JWT.');
         console.error(err);
         res.render('index', { title: 'Electronics Club @ OSU', user:false, admin:false });
+    }   
+}
+async function validateEmail(req,res,next){
+    const email = req.body.email;
+    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if(re.test(String(email).toLowerCase())){
+        next();
+    }else{
+        res.status(401).end();
     }
-    
+}
+async function validatePassword(req,res,next){
+    const password = req.body.password;
+    const passwordConfirm = req.body.passwordConfirm;
+    if(password.length>=8&&password.length<=32&&password===passwordConfirm){
+        next();
+    }else{
+        res.status(401).end();
+    }
+
+}
+async function validateUniqueEmail(req,res,next){
+    const email = req.body.email;
+    const sameEmail = await db.collection('users').find({email:email}).toArray();
+    if(sameEmail.length===0){
+        next();
+    }else{
+        res.status(409).end();
+    }
+}
+async function validateNameDotNum(req,res,next){
+    const fName = req.body.fName;
+    const lName = req.body.lName;
+    const dNum = req.body.dNum;
+    if(fName.length>1 && lName.length>1 && dNum>=0){
+        next();
+    }else{
+        res.status(401).end();
+    }
+}
+async function createNewUser(req,res,next){
+    const email = req.body.email;
+    const password = req.body.password;
+    const fName = req.body.fName;
+    const lName = req.body.lName;
+    const dNum = req.body.dNum;
+    const hash = await bcrypt.hash(password,10);
+    const result = await db.collection('users').insertOne({email:email,password:hash,fName:fName,lName:lName,dNum:dNum,admin:false});
+    next();
 }
 module.exports = {
     checkLoginCredentials,
     validateToken,
     validateAdmin,
+    validateEmail,
+    validatePassword,
+    validateUniqueEmail,
+    validateNameDotNum,
+    createNewUser,
     renderPage
 };

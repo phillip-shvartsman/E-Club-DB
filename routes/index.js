@@ -16,7 +16,9 @@ const auth = require('../auth/auth');
 router.post('/login',auth.checkLoginCredentials,(req,res,next)=>{
     res.redirect('/');
 });
-
+router.post('/register',auth.validateEmail,auth.validatePassword,auth.validateUniqueEmail,auth.validateNameDotNum,auth.createNewUser,auth.checkLoginCredentials,async (req,res,next)=>{
+    res.redirect('/');
+});
 router.get('/logout',function(req,res,next){
     res.clearCookie('jwt');
     res.redirect('/');

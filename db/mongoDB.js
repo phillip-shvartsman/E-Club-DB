@@ -27,12 +27,12 @@ module.exports.connect = () => new mongoClient(db_url,
         }
 
         //On server restart read .env file to set username and password
-        if(await db.listCollections({name:'users'}).hasNext()){
-            await db.dropCollection('users');
+        if(!await db.listCollections({name:'users'}).hasNext()){
+            await db.createCollection('users',{strict:true});
         }
-        await db.createCollection('users',{strict:true});
+        await db.collection('users').deleteOne({id:1});
         const hash = await bcrypt.hash(process.env.PASSWORD,10);
-        await db.collection('users').insertOne({username:process.env.USERNAME,password:hash,admin:true});
+        await db.collection('users').insertOne({id:1,email:process.env.USERNAME,password:hash,admin:true});
 
         //Create checkout collection
         if(!await db.listCollections({name:'checkOut'}).hasNext()){

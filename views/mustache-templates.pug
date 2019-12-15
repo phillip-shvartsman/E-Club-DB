@@ -1,0 +1,284 @@
+//- Mustache JS Templates
+script(id="result-row-template" type="template")
+    tr(class="result-row" _id="{{_id}}")
+        td {{partName}}
+        td {{cat}}
+        td {{subCat}}
+        td {{val}}
+        td {{partName}}
+        td {{loc}}
+        td {{qty}}
+        td {{amountCheckedOut}}
+        td {{notes}}
+//- Mustache JS Templates that only are available for users.js
+if user
+    script(id="request-entry-template" type="template")
+        #request-copy-email(style='display:none')
+        table(class="table table-sm check-out-table mt-3")
+            th {{fName}} {{lName}}
+            th .{{dNum}}
+            th {{email}}
+            th {{for}}
+            th 
+            tr
+                td(colspan="5") {{requestText}}
+    script(id='check-out-template' type='template')
+        h2 Your Unapproved Check-Outs
+        p This tab contains items you have requested to checkout.
+            div(id='unapproved-check-outs') {{#hasUnapproved}}
+                    table(class="table table-sm")
+                        thead
+                            tr
+                                th Part Name
+                                th Cat.
+                                th Sub-Cat.
+                                th Value
+                                th Part #
+                                th Location
+                                th Available
+                                th Your Checkout
+                                th Checked Out Total
+                                th Notes
+                        tbody {{#unapproved}}
+                            tr(class='unapproved-check-out' amountToCheckOut="{{amountToCheckOut}}" _id="{{_id}}" partID="{{partID}}" partName="{{partName}}")
+                                td {{partName}}
+                                td {{cat}}
+                                td {{subCat}}
+                                td {{val}}
+                                td {{partNum}}
+                                td {{loc}}
+                                td {{qty}}
+                                td {{amountToCheckOut}}
+                                td {{amountCheckedOut}}
+                                td {{notes}} {{/unapproved}} {{/hasUnapproved}}
+        h2 Your Approved Check-Outs
+        p This tab contains items that the Electronics Club officers have prepared for you. Please visit them to collect them.
+            div(id='approved-check-outs') {{#hasApproved}}
+                    table(class="table table-sm")
+                        thead
+                            tr
+                                th Part Name
+                                th Cat.
+                                th Sub-Cat.
+                                th Value
+                                th Part #
+                                th Location
+                                th Available
+                                th Your Checkout
+                                th Checked Out Total
+                                th Notes
+                        tbody {{#approved}}
+                            tr
+                                td {{partName}}
+                                td {{cat}}
+                                td {{subCat}}
+                                td {{val}}
+                                td {{partNum}}
+                                td {{loc}}
+                                td {{qty}}
+                                td(class='change-amount') {{amountToCheckOut}}
+                                td {{amountCheckedOut}}
+                                td {{notes}} {{/approved}} {{/hasApproved}}
+        h2 Items You Currently Have Out
+        p This tab contains items that you have picked up.
+            div(id='parts-out') {{#hasOut}}
+                    table(class="table table-sm")
+                        thead
+                            tr
+                                th Part Name
+                                th Cat.
+                                th Sub-Cat.
+                                th Value
+                                th Part #
+                                th Location
+                                th Available
+                                th Your Checkout
+                                th Checked Out Total
+                                th Notes
+                        tbody {{#out}}
+                            tr
+                                td {{partName}}
+                                td {{cat}}
+                                td {{subCat}}
+                                td {{val}}
+                                td {{partNum}}
+                                td {{loc}}
+                                td {{qty}}
+                                td(class='change-amount') {{amountToCheckOut}}
+                                td {{amountCheckedOut}}
+                                td {{notes}} {{/out}} {{/hasOut}}
+        h2 Previous Checkouts
+        p This tab contains items that you have already returned.
+            div(id='parts-returned') {{#hasReturned}}
+                    table(class="table table-sm")
+                        thead
+                            tr
+                                th Part Name
+                                th Cat.
+                                th Sub-Cat.
+                                th Value
+                                th Part #
+                                th Location
+                                th Available
+                                th Your Checkout
+                                th Checked Out Total
+                                th Notes
+                        tbody {{#returned}}
+                            tr
+                                td {{partName}}
+                                td {{cat}}
+                                td {{subCat}}
+                                td {{val}}
+                                td {{partNum}}
+                                td {{loc}}
+                                td {{qty}}
+                                td(class='change-amount') {{amountToCheckOut}}
+                                td {{amountCheckedOut}}
+                                td {{notes}} {{/returned}} {{/hasReturned}}
+//- Mustache JS Templates that only are available for admin.js
+if admin
+    script(id="admin-request-entry" type="template")
+        #request-copy-email(style='display:none')
+        table(class="table table-sm check-out-table mt-3")
+            th {{fName}} {{lName}}
+            th .{{dNum}}
+            th {{email}}
+            th {{for}}
+            th 
+                img(class="request-email-icon icon" email="{{email}}" src="/images/email.png")
+                img(class="request-delete-icon icon" _id='{{_id}}' src="/images/delete.png")
+            tr
+                td(colspan="5") {{requestText}}
+    script(id="admin-check-out-table-template" type="template")
+        h2 Unapproved Check-Outs 
+        div(id='unapproved-check-outs') {{#unapproved}}
+            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
+                p {{fName}} {{lName}}.{{dNum}} {{email}}
+                //-img(class="display-check-out" src="/images/down-arrow.png")
+                table(class="table table-sm")
+                    thead
+                        tr
+                            th Part Name
+                            th Cat.
+                            th Sub-Cat.
+                            th Value
+                            th Part #
+                            th Location
+                            th Available
+                            th Requested
+                            th Checked Out
+                            th Notes
+                            th
+                    tbody {{#parts}}
+                        tr
+                            td {{partName}}
+                            td {{cat}}
+                            td {{subCat}}
+                            td {{val}}
+                            td {{partNum}}
+                            td {{loc}}
+                            td {{qty}}
+                            td(class='change-amount') {{amountToCheckOut}}
+                            td {{amountCheckedOut}}
+                            td {{notes}}
+                            td <img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class='approve-part' src="/images/check.png"> {{/parts}}
+            | {{/unapproved}}
+        h2 Approved Check-Outs
+        div(id='approved-check-outs') {{#approved}}
+            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
+                p {{fName}} {{lName}}.{{dNum}} {{email}}
+                //-img(class="display-check-out" src="/images/down-arrow.png")
+                table(class="table table-sm")
+                    thead
+                        tr
+                            th Part Name
+                            th Cat.
+                            th Sub-Cat.
+                            th Value
+                            th Part #
+                            th Location
+                            th Available
+                            th Requested
+                            th Checked Out
+                            th Notes
+                            th
+                    tbody {{#parts}}
+                        tr
+                            td {{partName}}
+                            td {{cat}}
+                            td {{subCat}}
+                            td {{val}}
+                            td {{partNum}}
+                            td {{loc}}
+                            td {{qty}}
+                            td(class='change-amount') {{amountToCheckOut}}
+                            td {{amountCheckedOut}}
+                            td {{notes}}
+                            td <img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class='set-part-out' src="/images/check.png"><img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class='unapprove-part' src="/images/up-arrow.png"> {{/parts}}
+            | {{/approved}}
+        h2 Parts Out
+        div(id='parts-out') {{#out}}
+            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
+                p {{fName}} {{lName}}.{{dNum}} {{email}}
+                //-img(class="display-check-out" src="/images/down-arrow.png")
+                table(class="table table-sm")
+                    thead
+                        tr
+                            th Part Name
+                            th Cat.
+                            th Sub-Cat.
+                            th Value
+                            th Part #
+                            th Location
+                            th Available
+                            th Requested
+                            th Checked Out
+                            th Notes
+                            th 
+                    tbody {{#parts}}
+                        tr
+                            td {{partName}}
+                            td {{cat}}
+                            td {{subCat}}
+                            td {{val}}
+                            td {{partNum}}
+                            td {{loc}}
+                            td {{qty}}
+                            td(class='change-amount') {{amountToCheckOut}}
+                            td {{amountCheckedOut}}
+                            td {{notes}}
+                            td <img _id="{{_id}}" class='check-in-part' src="/images/check.png"> {{/parts}}
+            | {{/out}}
+        h2 Parts Returned
+        div(id='parts-returned') {{#returned}}
+            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
+                p {{fName}} {{lName}}.{{dNum}} {{email}}
+                //-img(class="display-check-out" src="/images/down-arrow.png")
+                table(class="table table-sm")
+                    thead
+                        tr
+                            th Part Name
+                            th Cat.
+                            th Sub-Cat.
+                            th Value
+                            th Part #
+                            th Location
+                            th Available
+                            th Requested
+                            th Checked Out
+                            th Notes
+                            th 
+                    tbody {{#parts}}
+                        tr
+                            td {{partName}}
+                            td {{cat}}
+                            td {{subCat}}
+                            td {{val}}
+                            td {{partNum}}
+                            td {{loc}}
+                            td {{qty}}
+                            td(class='change-amount') {{amountToCheckOut}}
+                            td {{amountCheckedOut}}
+                            td {{notes}}
+                            td <img _id="{{_id}}" class='check-in-part' src="/images/check.png"> {{/parts}}
+            | {{/returned}}

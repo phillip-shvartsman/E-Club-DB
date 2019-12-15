@@ -1,45 +1,118 @@
 extends layout
 
 block content
+	//- Title
 	h1= title
 	p Welcome to #{title}
+	if admin
+		p You are signed into the admin account.
+	if user && !admin
+		p You are signed in as #{email}
+	
+
+	//- Flash messages used by the function successFlash and errorFlash
 	div(id="successFlash" class="alert alert-success" style="display:none; z-index:500; position:fixed;")
 	div(id="errorFlash" class="alert alert-danger" style="display:none; z-index:500; position:fixed;")
-	if !admin
-		button(id="show-login" type="button" class="btn btn-primary") Login for officers
+
+
+	//- If not logged in display the following login form.
+	if !user
+		div(id="buttons-container")
+			button(id="show-login" type="button" class="btn btn-primary mr-3") Login
+			button(id="show-register" type="button" class="btn btn-primary") Register
+
+		//- Login Form
 		div(class="container" style="display:none" id="login-container")
 			form(id="login-form")
 				#login-row.form-row
 					div(class="form-group col")
-						label(for="username") Username
-						input(type="text" class="form-control" id="username" name="username" placeholder="Username")
+						label(for="email") Email
+						input(type="text" class="form-control" id="email" name="email" placeholder="Email")
 					div(class="form-group col")
 						label(for="password") Password
 						input(type="password" class="form-control" id="password" name="password" placeholder="Password")
 				div(class="form-row")
 					label(for="login")
-					button(id="login" type="submit" class="btn btn-primary") Login
-	if admin
+					button(id="login" type="submit" class="btn btn-primary mr-3") Login
+					button(class="cancel-login-register" type="button" class="btn btn-danger") Cancel
+
+		//-Register form.
+		div(class="container" style="display:none" id="register-container")
+			form(id="register-form")
+				#register-row.form-row
+					div(class="form-group col")
+						label(for='fname') First Name
+						input(type="text" class="form-control" id="fName" name="fName" placeholder="First Name" required)
+					div(class="form-group col")
+						label(for='lname') Last Name
+						input(type="text" class="form-control" id="lName" name="lName" placeholder="Last Name" required)
+					div(class="form-group col")
+						label(for='lname') Dot #
+						input(type="number" class="form-control" id="dNum" name="dNum" placeholder="Dot #" required)
+				#register-row.form-row
+					div(class="form-group col")
+						label(for="email") Email
+						input(type="email" class="form-control" id="email" name="email" placeholder="Email" required)
+					div(class="form-group col")
+						label(for="password") Password
+						input(type="password" class="form-control password-match" id="password" name="password" placeholder="Password" required minlength="8")
+					div(class="form-group col")
+						label(for="confirm-password") Confirm Password
+						input(type="password" class="form-control password-match" id="passwordConfirm" name="passwordConfirm" placeholder="Confirm Password" required)
+				div(class="form-row")
+					label(for="register")
+					button(id="register" type="submit" class="btn btn-primary mr-3") Register
+					button(class="cancel-login-register" type="button" class="btn btn-danger") Cancel
+
+	//- If the person is logged in display the following loggout form.
+	if user
 		div(class="form-row")
 					label(for="logout")
 					button(id="logout" type="button" class="btn btn-primary") Logout
+
+	//- Different tabs at the top of th screen.
 	ul(class="nav nav-tabs justify-content-center" id="top-nav")
 		li(class="nav-item")
 			a(class="nav-link active" href="#" id='search-tab') Search
-		li(class="nav-item")
-			a(class="nav-link" href="#" id="check-out-tab") Check-outs
-		li(class="nav-item")
-			a(class="nav-link" href="#" id="requests-tab") Requests 
+		if user
+			li(class="nav-item")
+				a(class="nav-link" href="#" id="check-out-tab") Check-outs
+			li(class="nav-item")
+				a(class="nav-link" href="#" id="requests-tab") Requests 
+
+	//-Contains the search form, the search results and associated modals.
 	#search-container.container
+
+		//-//////// SEARCH CONTAINER MODALS///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//- If your just a standard user, add this modal to allow you to set the quantity of an item you want to add to your unapproved checkouts.
+		if user && !admin
+			div(class="modal fade" id="qty-modal")
+				//- When you click on the part in the search results, its information is stored here to be used later.
+				div(id="storePart" value="" style="display:none")
+				div(class="modal-dialog")
+					div(class="modal-content")
+						#part-options
+							div(class="modal-header")
+								h4(class="modal-title") How much of this item do you want to check out?
+						form(id="qty-form" class='m-3')
+							#input-row.form-row
+								div(class="form-group col")
+									label(for="quantity") Quantity
+									input(type="text" id="qty" name="qty" class="form-control" placeholder="Quantity")
+							div(class="form-row")
+								label(for="sendQty")
+								button(id="sendQty" type="submit" class="m-3 btn btn-primary") Save
+
+		//- If you are an admin, you don't have the quantity set modal but you have a modal to change and delete parts from the database.
 		if admin
 			div(class="modal fade" id="modify-delete-modal" value="")
+				//- When you click on the part in the search results, its information is stored here to be used later.
 				div(id="storePart" value="" style="display:none")
 				div(class="modal-dialog")
 					div(class="modal-content")
 						#part-options
 							div(class="modal-header")
 								h4(class="modal-title") What do you want to do with this part?
-								button(type="button" class="close" data-dismiss="modal")
 							div(class="modal-body")
 								button(type="button" id="modify-button" class="btn btn-primary") Modify
 								button(type="button" id="delete-button" class="btn btn-danger") Delete
@@ -74,62 +147,49 @@ block content
 							div(class="form-row")
 								label(for="inputQuantity")
 								button(id="modifyPart" type="button" class="m-3 btn btn-primary") Save
-			form(id="add-form")
+		//-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+		//-/////////////////////////SEARCH FORM AND RESULTS/////////////////////////////////////////////////////////////////////////////////////////
+		if user && !admin
+			p <strong>Hello! To begin checking out click the a search result row below to add the items to your checkout cart. You may edit the quantity in the checkouts tab. To remove an item from your requested check out, click its row in the checkout tab.</strong>
+		#search-form-container.container.mt-3
+			form(id="search-form" class="mb-3")
 				#input-row.form-row
 					div(class="form-group col")
 						label(for="partName") Part Name
-						input(type="text" name="partName" class='add-form-input' class="form-control" placeholder="Partname")
+						input(type="text" name="partName" class="form-control part-search-input" placeholder="Partname")
 					div(class="form-group col")
 						label(for="category") Category
-						input(type="text" name="cat" class='add-form-input' class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Sensor/Display  Office Supplies/Other")
+						input(type="text" name="cat" class="form-control part-search-input" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Sensor/Display  Office Supplies/Other")
 					div(class="form-group col")
 						label(for="inputQuantity") Sub-Category
-						input(type="text" name="subCat" class='add-form-input' class="form-control" placeholder="Sub-category")
+						input(type="text" name="subCat" class="form-control part-search-input" placeholder="Sub-category")
 					div(class="form-group col")
 						label(for="value") Value
-						input(type="text" name="val" class='add-form-input' class="form-control" placeholder="Value")
+						input(type="text" name="val" class="form-control part-search-input" placeholder="Value")
 				#input-row.form-row
 					div(class="form-group col")
 						label(for="inputQuantity") Part Number
-						input(type="text" name="partNum" class='add-form-input' class="form-control" placeholder="Part Number")
+						input(type="text" name="partNum" class="form-control part-search-input" placeholder="Part Number")
 					div(class="form-group col")
 						label(for="inputQuantity") Location
-						input(type="text" class="form-control" class='add-form-input' name="loc" placeholder="Location")
-					div(class="form-group col")
-						label(for="qty") Quantity
-						input(type="text" class="form-control" name="qty" placeholder="Quantity")
-				div(class="form-row")
-					div(class="form-group col")
-						label(for="qty") Notes:
-						textarea(class="form-control" rows="5" id="comment" name="notes")
-				div(class="form-row")
-					label(for="inputQuantity")
-					button(id="addPart" type="button" class="m-3 btn btn-primary") Add
-					label(for="clearAddPart")
-					button(id="clearAddPart" type="button" class="m-3 btn btn-info") Clear/Get All
-		if !admin
-			#search-form-container.container.mt-3
-				form(id="search-form" class="mb-3")
-					#input-row.form-row
+						input(type="text" class="form-control part-search-input" name="loc" placeholder="Location")
+					if admin
 						div(class="form-group col")
-							label(for="partName") Part Name
-							input(type="text" name="partName" class="form-control no-login-input" placeholder="Partname")
+							label(for="qty") Quantity
+							input(type="text" class="form-control" name="qty" placeholder="Quantity")
+				if admin
+					div(class="form-row")
 						div(class="form-group col")
-							label(for="category") Category
-							input(type="text" name="cat" class="form-control no-login-input" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Sensor/Display  Office Supplies/Other")
-						div(class="form-group col")
-							label(for="inputQuantity") Sub-Category
-							input(type="text" name="subCat" class="form-control no-login-input" placeholder="Sub-category")
-						div(class="form-group col")
-							label(for="value") Value
-							input(type="text" name="val" class="form-control no-login-input" placeholder="Value")
-					#input-row.form-row
-						div(class="form-group col")
-							label(for="inputQuantity") Part Number
-							input(type="text" name="partNum" class="form-control no-login-input" placeholder="Part Number")
-						div(class="form-group col")
-							label(for="inputQuantity") Location
-							input(type="text" class="form-control no-login-input" name="loc" placeholder="Location")
+							label(for="qty") Notes:
+							textarea(class="form-control" rows="5" id="comment" name="notes")
+					div(class="form-row")
+						label(for="inputQuantity")
+						button(id="addPart" type="button" class="m-3 btn btn-primary") Add
+						label(for="clearSearchForm")
+						button(id="clearSearchForm" type="button" class="m-3 btn btn-info") Clear/Get All
 		table(class="table table-sm")
 			thead
 				tr
@@ -143,235 +203,74 @@ block content
 					th # Checked Out
 					th Notes
 			tbody(id='search-table-body')
-	div( class="container" id="check-out-container" style="display:none")
-		if admin
-			div(class="modal fade" id="qtyModal")
-				div(id="checkOutStorePart" value="" style="display:none")
+	//-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	//-///////////////CHECK-OUT-CONTAINER////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	if user
+		div(class="container" id="check-out-container" style="display:none")
+			if admin
+				form(id='filter-check-outs-form')
+					#input-row.form-row
+						div(class="form-group col")
+							label(for="filter") Enter something to filter out check outs.
+							input(type="text" id='check-outs-filter' name='check-outs-filter' class="form-control" placeholder="")
+			div(class="modal fade" id="modify-check-out-modal")
+				div(id="store-check-out" style="display:none")
 				div(class="modal-dialog")
 					div(class="modal-content")
-						div(class="modal-header")
-							h4(class="modal-title") Select amount to check Out
-							button(type="button" class="close" data-dismiss="modal")
-						form(id="quantity-form")
+						#part-options
+							div(class="modal-header")
+								h4(id="modify-unapproved-check-out-modal-title" class="modal-title") Change qty for checkout below.
+								button(type="button" class="close" data-dismiss="modal")
+						form(id="modify-check-out-form" class='m-3')
+							#input-row.form-row
+								div(class="form-group col")
+									label(for="quantity") Quantity
+									input(type="text" id="modify-check-out-qty" name="qty" class="form-control" placeholder="Quantity")
+							div(class="form-row")
+								div(class='form-group col')
+									label(for="modify-qty")
+									button(id="modify-qty" type="submit" class="m-3 btn btn-primary") Save
+								div(class='form-group col')
+									label(for="remove")
+									button(id='remove-unapproved-check-out' type="button" class="m-3 btn btn-warning") Remove
+			div(id="check-outs-container")
+	//-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	//-//////REQUESTS CONTAINER//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	if user
+		div( class="container" id="requests-container" style="display:none")
+			if !admin
+				#before-request
+					p(class="py-2") Hello! Please use the form below to request parts for the E-Club to buy. Please note a request is <strong>not guaranteed</strong> to be filled. You will receive an email if your request has been filled. All requests that have not been fulfilled will be notified a week prior to the event.
+					p(class="pb-2") In your request please be as <strong>detailed as possible and realistic</strong>. Include part numbers when possible. Keep in mind that <strong>we are a volunteer organization</strong> we can not purchase expensive electronic equipment for everyone. If you provide a <strong>source with prices such as an Arrow or Digikey</strong> for your request that will be very helpful as well.
+					form(id="request-form")
+						#input-row.form-row
 							div(class="form-group col")
-								label(for="amountToCheck") Quantity
-								input(type="number" name="amountToCheckOut" class="form-control" placeholder="Quantity" data-toggle="tooltip" data-placement="top")
-						div(class="form-row")
-							label(for="addQty")
-							button(id="addQty" type="button" class="m-3 btn btn-primary") Add
-		if admin
-			h4 1. Enter name of the person checking out
-			form(id="add-check-out-form" class="mb-3")
-				#input-row.form-row
-					div(class="form-group col")
-						label(for="fname") First Name
-						input(type="text" name="fname" class="form-control" placeholder="First Name" data-toggle="tooltip" data-placement="top")
-					div(class="form-group col")
-						label(for="lname") Last Name
-						input(type="text" name="lname" class="form-control" placeholder="Last Name")
-					div(class="form-group col")
-						label(for="dNum") Dot Number
-						input(type="number" name="dNum" class="form-control" placeholder="Dot #")
-					div(class="form-group col")
-						label(for="fNum") Form Number
-						input(type="number" name="fNum" class="form-control" placeholder="Form #")
-					div(class="form-group col")
-						label(for="dateDue") Date Due
-						input(type="date" name="dateDue" class="form-control" placeholder="Date Due" data-toggle="tooltip" data-placement="top" title="Makeathon Due: 3/4/2018")
-			h4 2. Search for Parts, and add them by clicking
-			form(id="check-out-search-form" class="mb-3")
-				#input-row.form-row
-					div(class="form-group col")
-						label(for="partName") Part Name
-						input(type="text" id="check-out-partName" name="partName" class="form-control" placeholder="Partname")
-					div(class="form-group col")
-						label(for="category") Category
-						input(type="text" id="check-out-cat" name="cat" class="form-control" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Sensor/Display  Office Supplies/Other")
-					div(class="form-group col")
-						label(for="inputQuantity") Sub-Category
-						input(type="text" id="check-out-subCat" name="subCat" class="form-control" placeholder="Sub-category")
-					div(class="form-group col")
-						label(for="value") Value
-						input(type="text" id="check-out-val" name="val" class="form-control" placeholder="Value")
-				#input-row.form-row
-					div(class="form-group col")
-						label(for="inputQuantity") Part Number
-						input(type="text" id="check-out-partNum" name="partNum" class="form-control" placeholder="Part Number")
-					div(class="form-group col")
-						label(for="inputQuantity") Location
-						input(type="text" id="check-out-loc" class="form-control" name="loc" placeholder="Location")
-			h6 Search Results
-			table(class="table table-sm")
-				thead
-					tr
-						th Part Name
-						th Category
-						th Sub-Category
-						th Value
-						th Part #
-						th Location
-						th Qty.
-						th # Checked Out
-						th Notes
-						th # To Check Out
-				tbody(id='check-out-search-body')
-			h4 Current Check Out Cart
-			table(class="table table-sm")
-				thead
-					tr
-						th Part Name
-						th Category
-						th Sub-Category
-						th Value
-						th Part #
-						th Location
-						th Qty.
-						th # Checked Out
-						th Notes
-						th # To Check Out
-				tbody(id='current-check-out')
-			h4 3. Once satisfied click below to finalize.
-			div(class="form-row")
-					button(id="addCheckOutButton" type="button" class="btn btn-primary") Add Check Out
-		if !admin
-			h5(class="my-2") Enter Your Name and Dot Number to see your current check out.
-			form(id="check-check-out-form" class="mb-3")
-				#input-row.form-row
-					div(class="form-group col")
-						label(for="lname") Last Name
-						input(type="text" name="lname" class="form-control" placeholder="Last Name" required)
-					div(class="form-group col")
-						label(for="dNum") Dot #
-						input(type="number" name="dNum" class="form-control" placeholder="Dot #" required)
-				div(class="form-row")
-					button(id="check-check-out-button" type="submit" class="btn btn-primary") Search
-			div(id='your-check-out')
-		if admin
-			h3(class="my-2") All Checkouts
-				h5 (Hitting a plus on a checkout will add the current check-out to it)
-				form(id="filter-checkouts")
-					#input-row.form-row
-						div(class="form-group col")
-							label(for="fname") First Name
-							input(type="text" name="fname" class="form-control filter" placeholder="First Name")
-						div(class="form-group col")
-							label(for="lname") Last Name
-							input(type="text" name="lname" class="form-control filter" placeholder="Last Name")
-						div(class="form-group col")
-							label(for="dNum") Dot #
-							input(type="number" name="dNum" class="form-control filter" placeholder="Dot #")
-						div(class="form-group col")
-							label(for="fNum") Form Number
-							input(type="number" name="fNum" class="form-control filter" placeholder="Form #")
-			div(id="all-checkouts-container")
-	div( class="container" id="requests-container" style="display:none")
-		if !admin
-			#before-request
-				p(class="py-2") Hello! Please use the form below to request parts for the E-Club to buy. Please note a request is <strong>not guaranteed</strong> to be filled. You will receive an email if your request has been filled. All requests that have not been fulfilled will be notified a week prior to the event.
-				p(class="pb-2") In your request please be as <strong>detailed as possible and realistic</strong>. Include part numbers when possible. Keep in mind that <strong>we are a volunteer organization</strong> we can not purchase expensive electronic equipment for everyone. If you provide a <strong>source with prices such as an Arrow or Digikey</strong> for your request that will be very helpful as well.
-				form(id="request-form")
-					#input-row.form-row
-						div(class="form-group col")
-							label(for="fname") First Name
-							input(type="text" name="fname" class="form-control" placeholder="First Name" required)
-						div(class="form-group col")
-							label(for="lname") Last Name
-							input(type="text" name="lname" class="form-control" placeholder="Last Name" required)
-						div(class="form-group col")
-							label(for="dNum") Dot #
-							input(type="number" name="dNum" class="form-control" placeholder="Dot #" required)
-						div(class="form-group col")
-							label(for="email") Email
-							input(type="email" name="email" class="form-control" placeholder="Email" required)
-						div(class="form-group col")
-							label(for="for") What is this request for?
-							select(class="form-control" name="for" required)
-								option(value="Makeathon") Makeathon
-								option(value="Hackathon") Hackathon
-								option(value="Personal Project") Personal Project
-					#input-row.form-row
-						label(for="requestText" required) Request:
-						textarea(class="form-control" rows="5" id="request-text" name="requestText" required)
-					#input-row.form-row.pt-3
-						div.col-md-4
-						div.col-md-4.text-center
-							button(type="submit" id="submit-request-button" class="btn btn-primary") Submit Your Request
-						div.col-md-4
-			#after-request.mt-3(style='display:none')
-				p Thank you for your request! Please be on the look out for future emails!
-		if admin
-			#all-requests.mt-3
-	//- Mustache JS Templates
-	script(id="result-row-template" type="template")
-		tr(class="result-row" value="{{value}}")
-			td {{partName}}
-			td {{cat}}
-			td {{subCat}}
-			td {{val}}
-			td {{partName}}
-			td {{loc}}
-			td {{qty}}
-			td {{amountCheckedOut}}
-			td {{notes}}
-	script(id="checkout-table-template" type="template")
-		table(class="table table-sm check-out-table" _id="{{_id}}")
-			thead
-				tr
-					th {{fname}} {{lname}}
-					th Dot# {{dNum}}
-					th Due on {{dateDue}}
-			tbody
-	script(id="checkout-entry-template" type="template")
-		tr(class="checked-out-part")
-			td {{amountCheckedOut}}
-			td {{partName}}
-			td {{partNum}}
-			td {{val}}
-	//- Mustache JS Templates that only are available for admin.js
-	if admin
-		script(id="admin-row-template" type="template")
-			tr(class="{{optClass}}" _id="{{_id}}")
-				td {{partName}}
-				td {{cat}}
-				td {{subCat}}
-				td {{val}}
-				td {{partNum}}
-				td {{loc}}
-				td {{qty}}
-				td {{amountCheckedOut}}
-				td {{notes}}
-		script(id="admin-checkout-table-template" type="template")
-			table(class="table table-sm check-out-table" _id="{{_id}}" fNum="{{fNum}}" dNum="{{dNum}}" fname="{{fname}}" lname="{{lname}}")
-				thead
-					tr
-				tbody
-		script(id="admin-checkout-table-heading-template" type="template")
-			th {{fname}} {{lname}}
-			th Dot # {{dNum}}
-			th Form # {{fNum}}
-			th Due on {{dateDue}}
-			td 
-				img(class='plus-box' src='/images/plus.png')
-				img(class='check-box-all' src='/images/check.png')
-		script(id="admin-checkout-entry" type="template")
-			tr(class="checked-out-part" _id='{{_id}}')
-				td {{amountCheckedOut}}
-				td {{partName}}
-				td 
-				td {{partNum}}
-				td {{val}}
-				td {{loc}}
-				//- UNESCAPED HTML
-				td {{{check_part}}} 
-		script(id="admin-request-entry" type="template")
-			#request-copy-email(style='display:none')
-			table(class="table table-sm check-out-table mt-3")
-				th {{fname}} {{lname}}
-				th .{{dNum}}
-				th {{email}}
-				th {{for}}
-				th 
-					img(class="request-email-icon icon" email="{{email}}" src="/images/email.png")
-					img(class="request-delete-icon icon" _id='{{_id}}' src="/images/delete.png")
-				tr
-					td(colspan="5") {{requestText}}
+								label(for="for") What is this request for?
+								select(class="form-control" name="for" required)
+									option(value="Makeathon") Makeathon
+									option(value="Hackathon") Hackathon
+									option(value="Personal Project") Personal Project
+						#input-row.form-row
+							label(for="requestText" required) Request:
+							textarea(class="form-control" rows="5" id="request-text" name="requestText" required)
+						#input-row.form-row.pt-3
+							div.col-md-4
+							div.col-md-4.text-center
+								button(type="submit" id="submit-request-button" class="btn btn-primary") Submit Your Request
+							div.col-md-4
+				#after-request.mt-3(style='display:none')
+					p Thank you for your request! Please be on the look out for future emails!
+				p Your previous requests:
+				#user-requests
+			if admin
+				
+				#all-requests.mt-3
+
+	//-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	//-Include the mustache templates.
+	include mustache-templates.pug
