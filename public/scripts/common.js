@@ -40,6 +40,22 @@ function successFlash(message)
         },1000);
     });
 }
+
+//Refresh JWT function
+//Check if the JWT is in the current document.
+function hasJWT(){
+    return document.cookie.indexOf('jwt=')>=0;
+}
+async function refreshJWT(){
+    await $.ajax({
+        method:'POST',
+        url:'/refreshJWT'
+    });
+    if(hasJWT()){
+        setTimeout(refreshJWT,60000);
+    }
+}
+
 async function applyRowEffects(){
     $('.result-row').mouseover(function(){
         $(this).css('background-color','#007bff');
@@ -120,6 +136,9 @@ async function closeAllContainers(){
 }
 
 $(document).ready(function(){
+    if(hasJWT()){
+        setTimeout(refreshJWT,60000);    
+    }
     $('.part-search-input').on('input',async()=>{
         createTimeout(searchParts);
     });

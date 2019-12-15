@@ -23,6 +23,7 @@ router.get('/logout',function(req,res,next){
     res.clearCookie('jwt');
     res.redirect('/');
 });
+router.post('/refreshJWT',auth.validateToken,auth.refreshJWT);
 
 ////GET HOME PAGE////
 router.get('/', auth.renderPage);

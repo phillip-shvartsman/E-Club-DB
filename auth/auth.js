@@ -24,7 +24,7 @@ async function checkLoginCredentials(req,res,next){
         if(valid){
             //Don't send password in the JWT
             delete user.password;
-            const newJWT = jwt.sign(user,process.env.COOKIESECRET,{ expiresIn: '2h' });
+            const newJWT = jwt.sign(user,process.env.COOKIESECRET,{ expiresIn: '15m' });
             res.cookie('jwt',newJWT);
             res.end();
         }else{
@@ -116,6 +116,14 @@ async function createNewUser(req,res,next){
     const result = await db.collection('users').insertOne({email:email,password:hash,fName:fName,lName:lName,dNum:dNum,admin:false});
     next();
 }
+async function refreshJWT(req,res,next){
+    const user = res.locals.decoded;
+    delete user['iat'];
+    delete user['exp'];
+    const newJWT = jwt.sign(user,process.env.COOKIESECRET,{ expiresIn: '15m' });
+    res.cookie('jwt',newJWT);
+    res.end();
+}
 module.exports = {
     checkLoginCredentials,
     validateToken,
@@ -125,5 +133,6 @@ module.exports = {
     validateUniqueEmail,
     validateNameDotNum,
     createNewUser,
-    renderPage
+    renderPage,
+    refreshJWT
 };
