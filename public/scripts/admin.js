@@ -325,9 +325,10 @@ $(document).ready(function(){
     $('#search-tab').on('click',async()=>{
         await closeAllContainers();
         $('#add-form').trigger('reset');
+        $('#search-table-body').empty();
+        searchParts();
         await $('#search-container').fadeIn('fast').promise().done();
         $('#search-tab').addClass('active');
-        $('#search-table-body').empty();
     });
     //Check out tab
     $('#check-out-tab').on('click',async ()=>{

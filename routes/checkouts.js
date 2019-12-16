@@ -15,6 +15,8 @@ const auth = require('../auth/auth');
 //ObjectID class used to create mongo unique ID objects
 var ObjectID = require('mongodb').ObjectID;
 
+
+//User Endpoints
 router.post('/add-unapproved',auth.validateToken,async(req,res,next)=>{
     const userID = new ObjectID(res.locals.decoded._id);
     const partID = new ObjectID(req.body._id);
@@ -43,6 +45,69 @@ router.post('/add-unapproved',auth.validateToken,async(req,res,next)=>{
     }
 });
 
+router.post('/get-user-check-outs',auth.validateToken,async(req,res,next)=>{
+    const userID = new ObjectID(res.locals.decoded._id);
+    try{
+        const checkOuts = await db.collection('checkOut').find({userID:userID}).toArray();
+        const detailedCheckOuts = await getPartDetails(checkOuts);
+        res.send(detailedCheckOuts);
+    }catch(err){
+        console.error('Error in /get-user-checkouts endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
+});
+
+router.post('/modify-unapproved',auth.validateToken,async(req,res,next)=>{
+    const userID = new ObjectID(res.locals.decoded._id);
+    const checkOutID = new ObjectID(req.body._id);
+    const qty = parseInt(req.body.qty);
+    try{
+        const results = await db.collection('checkOut').find({_id:checkOutID,type:'unapproved'}).toArray();
+        if(results.length<1){
+            throw new Error('Checkout ID does not exist.');
+        }else{
+            const checkOut = results[0];
+            if(!userID.equals(new ObjectID(checkOut.userID))){
+                throw new Error('The checkout that is being modified is not owned by the modifying user.');
+            }else{
+                await db.collection('checkOut').updateOne({userID:userID,_id:checkOutID,type:'unapproved'},{$set:{amountToCheckOut:qty}});
+                res.end();
+            }
+        }
+    }
+    catch(err){
+        console.error('Error in /modify-unapproved endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
+});
+
+router.post('/remove-unapproved',auth.validateToken, async(req,res,next)=>{
+    const userID = new ObjectID(res.locals.decoded._id);
+    const checkOutID = new ObjectID(req.body._id);
+    try{
+        const results = await db.collection('checkOut').find({_id:checkOutID,type:'unapproved'}).toArray();
+        if(results.length<1){
+            throw new Error('Checkout ID does not exist.');
+        }else{
+            const checkOut = results[0];
+            if(!userID.equals(new ObjectID(checkOut.userID))){
+                throw new Error('The checkout that is being modified is not owned by the modifying user.');
+            }else{
+                await db.collection('checkOut').deleteOne({userID:userID,_id:checkOutID,type:'unapproved'});
+                res.end();
+            }
+        }
+    }
+    catch(err){
+        console.error('Error in /modify-unapproved endpoint.');
+        console.error(err);
+        res.status(500).end();
+    }
+});
+
+
 //A checkout is stored in the db with just _id's and a quantity. This function gets part details for each checkout and sends it to the client.
 async function getPartDetails(checkOuts){
     const detailedCheckOuts = [];
@@ -58,6 +123,9 @@ async function getPartDetails(checkOuts){
     }
     return detailedCheckOuts;
 }
+
+
+//Admin End Points
 router.post('/approve-part',auth.validateToken,auth.validateAdmin,async(req,res,next)=>{
     const checkOutID = new ObjectID(req.body.checkOutID);
     try{
@@ -116,63 +184,19 @@ router.post('/check-part-in',auth.validateToken,auth.validateAdmin,async(req,res
         res.status(500).end();
     }
 });
-router.post('/get-user-check-outs',auth.validateToken,async(req,res,next)=>{
-    const userID = new ObjectID(res.locals.decoded._id);
+
+async function getUsers(){
+    return db.collection('users').find({admin:false},{_id:0,email:1,password:0,fName:1,lName:1,dNum:1,admin:0}).toArray();
+}
+//Simple gets everything in the checkouts collection
+router.post('/get-check-outs',auth.validateToken,auth.validateAdmin,async(req,res,next)=>{
     try{
-        const checkOuts = await db.collection('checkOut').find({userID:userID}).toArray();
-        const detailedCheckOuts = await getPartDetails(checkOuts);
-        res.send(detailedCheckOuts);
+        const users = await getUsers();
+        const checkOuts = await db.collection('checkOut').find({}).toArray();
+        const detailedCheckOut = await getPartDetails(checkOuts);
+        res.send({users:users,detailedCheckOut:detailedCheckOut});
     }catch(err){
-        console.error('Error in /get-user-checkouts endpoint.');
-        console.error(err);
-        res.status(500).end();
-    }
-});
-
-router.post('/modify-unapproved',auth.validateToken,async(req,res,next)=>{
-    const userID = new ObjectID(res.locals.decoded._id);
-    const checkOutID = new ObjectID(req.body._id);
-    const qty = parseInt(req.body.qty);
-    try{
-        const results = await db.collection('checkOut').find({_id:checkOutID,type:'unapproved'}).toArray();
-        if(results.length<1){
-            throw new Error('Checkout ID does not exist.');
-        }else{
-            const checkOut = results[0];
-            if(!userID.equals(new ObjectID(checkOut.userID))){
-                throw new Error('The checkout that is being modified is not owned by the modifying user.');
-            }else{
-                await db.collection('checkOut').updateOne({userID:userID,_id:checkOutID,type:'unapproved'},{$set:{amountToCheckOut:qty}});
-                res.end();
-            }
-        }
-    }
-    catch(err){
-        console.error('Error in /modify-unapproved endpoint.');
-        console.error(err);
-        res.status(500).end();
-    }
-});
-
-router.post('/remove-unapproved',auth.validateToken, async(req,res,next)=>{
-    const userID = new ObjectID(res.locals.decoded._id);
-    const checkOutID = new ObjectID(req.body._id);
-    try{
-        const results = await db.collection('checkOut').find({_id:checkOutID,type:'unapproved'}).toArray();
-        if(results.length<1){
-            throw new Error('Checkout ID does not exist.');
-        }else{
-            const checkOut = results[0];
-            if(!userID.equals(new ObjectID(checkOut.userID))){
-                throw new Error('The checkout that is being modified is not owned by the modifying user.');
-            }else{
-                await db.collection('checkOut').deleteOne({userID:userID,_id:checkOutID,type:'unapproved'});
-                res.end();
-            }
-        }
-    }
-    catch(err){
-        console.error('Error in /modify-unapproved endpoint.');
+        console.error('Error in /get-all-checkouts endpoint.');
         console.error(err);
         res.status(500).end();
     }

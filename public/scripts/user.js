@@ -6,6 +6,7 @@
 /*global errorFlash*/
 /*global createTimeout*/
 /*global closeAllContainers*/
+/*global searchParts*/
 
 function buildUserCheckOutMustachObject(data){
     console.log(data);
@@ -113,9 +114,10 @@ $(document).ready(function(){
     $('#search-tab').on('click',async()=>{
         await closeAllContainers();
         $('#add-form').trigger('reset');
+        $('#search-table-body').empty();
         await $('#search-container').fadeIn('fast').promise().done();
         $('#search-tab').addClass('active');
-        $('#search-table-body').empty();
+        searchParts();
     });
     //Check out tab
     $('#check-out-tab').on('click',async ()=>{
@@ -145,6 +147,7 @@ $(document).ready(function(){
             });
             successFlash('Part was added to your unapproved checkouts.');
             $('#qty-modal').modal('hide');
+            $('#qty-form').trigger('reset');
         }
         catch(err){
             errorFlash(err.responseText);
