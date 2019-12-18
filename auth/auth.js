@@ -18,7 +18,8 @@ async function findByEmail(email){
 }
 //Express Middleware function
 async function checkLoginCredentials(req,res,next){
-    const user = await findByEmail(req.body.email);
+    //cast to lower case first.
+    const user = await findByEmail(req.body.email.toLowerCase());
     if(user){
         const valid = await bcrypt.compare(req.body.password,user.password);
         if(valid){
@@ -69,6 +70,9 @@ async function renderPage(req,res,next){
     }   
 }
 async function validateEmail(req,res,next){
+    //Cast email to lowercase
+    req.body.email = req.body.email.toLowerCase();
+
     const email = req.body.email;
     const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     if(re.test(String(email).toLowerCase())){
