@@ -50,7 +50,7 @@ function createSearchQuery(req)
 router.post('/search', async (req, res, next) => {
     try{
         const query = createSearchQuery(req);
-        const results = await db.collection('inventory').find(query).limit(100).toArray();
+        const results = await db.collection('inventory').find(query).toArray();
         res.send(results);
     }
     catch(err){

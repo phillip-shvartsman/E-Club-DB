@@ -60,13 +60,14 @@ function validateAdmin(req,res,next){
 //Express Middleware function
 async function renderPage(req,res,next){
     const incomingJWT = req.cookies.jwt;
+    const partsInventory = await db.collection('inventory').find({}).toArray();
     try {
-        const decoded = jwt.verify(incomingJWT,process.env.COOKIESECRET);
-        res.render('index', { title: 'Electronics Club @ OSU', user:true, admin:decoded.admin,email:decoded.email });
+        const decoded = await jwt.verify(incomingJWT,process.env.COOKIESECRET);
+        res.render('index', { title: 'Electronics Club @ OSU',partsInventory:partsInventory , user:true, admin:decoded.admin,email:decoded.email });
     } catch(err){
         console.error('Problem decoding JWT.');
         console.error(err);
-        res.render('index', { title: 'Electronics Club @ OSU', user:false, admin:false });
+        res.render('index', { title: 'Electronics Club @ OSU',partsInventory:partsInventory, user:false, admin:false });
     }   
 }
 async function validateEmail(req,res,next){

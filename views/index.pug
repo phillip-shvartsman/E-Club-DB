@@ -202,7 +202,19 @@ block content
 					th Qty.
 					th # Checked Out
 					th Notes
+			//- On first load, have the server generate the html
 			tbody(id='search-table-body')
+				each part in partsInventory
+					tr(class="result-row" _id= part._id)
+						td= part.partName
+						td= part.cat
+						td= part.subCat
+						td= part.val
+						td= part.partNum
+						td= part.loc
+						td= part.qty
+						td= part.amountCheckedOut
+						td= part.notes
 	//-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
