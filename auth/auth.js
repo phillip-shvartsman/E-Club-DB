@@ -63,11 +63,11 @@ async function renderPage(req,res,next){
     const partsInventory = await db.collection('inventory').find({}).toArray();
     try {
         const decoded = await jwt.verify(incomingJWT,process.env.COOKIESECRET);
-        res.render('index', { title: 'Electronics Club @ OSU',partsInventory:partsInventory ,LIVEADDRESS:process.env.LIVEADDRESS, live:process.env.LIVE, user:true, admin:decoded.admin,email:decoded.email });
+        res.render('index', { title: 'Electronics Club @ OSU',partsInventory:partsInventory ,LIVEADDRESS:process.env.LIVEADDRESS, LIVE:process.env.LIVE, user:true, admin:decoded.admin,email:decoded.email });
     } catch(err){
         console.error('Problem decoding JWT.');
         console.error(err);
-        res.render('index', { title: 'Electronics Club @ OSU',partsInventory:partsInventory,LIVEADDRESS:process.env.LIVEADDRESS, live:process.env.LIVE, user:false, admin:false });
+        res.render('index', { title: 'Electronics Club @ OSU',partsInventory:partsInventory,LIVEADDRESS:process.env.LIVEADDRESS, LIVE:process.env.LIVE, user:false, admin:false });
     }   
 }
 async function validateEmail(req,res,next){
