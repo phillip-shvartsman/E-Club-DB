@@ -8,7 +8,7 @@ block content
 		p You are signed into the admin account.
 	if user && !admin
 		p You are signed in as #{email}
-	
+
 
 	//- Flash messages used by the function successFlash and errorFlash
 	div(id="successFlash" class="alert alert-success" style="display:none; z-index:500; position:fixed;")
@@ -98,7 +98,7 @@ block content
 							#input-row.form-row
 								div(class="form-group col")
 									label(for="quantity") Quantity
-									input(type="text" id="qty" name="qty" class="form-control" placeholder="Quantity")
+									input(type="number" id="qty" name="qty" min="1" class="form-control" placeholder="Quantity" required)
 							div(class="form-row")
 								label(for="sendQty")
 								button(id="sendQty" type="submit" class="m-3 btn btn-primary") Save
@@ -162,7 +162,17 @@ block content
 						input(type="text" name="partName" class="form-control part-search-input" placeholder="Partname")
 					div(class="form-group col")
 						label(for="category") Category
-						input(type="text" name="cat" class="form-control part-search-input" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Sensor/Display  Office Supplies/Other")
+						select(class="form-control part-search-input" name="cat")
+							option(value="") 
+							option(value="Consumable") Consumable
+							option(value="IC") IC
+							option(value="MC") MC
+							option(value="Equipment") Equipment
+							option(value="Sensor") Sensor
+							option(value="Display") Display
+							option(value="Office Supplies") Office Supplies
+							option(value="Other") Other
+						//-input(type="text" name="cat" class="form-control part-search-input" placeholder="Category" data-toggle="tooltip" data-placement="top" title="Consumable/IC/MC    Equipment/Sensor/Display  Office Supplies/Other")
 					div(class="form-group col")
 						label(for="inputQuantity") Sub-Category
 						input(type="text" name="subCat" class="form-control part-search-input" placeholder="Sub-category")
@@ -190,6 +200,10 @@ block content
 						button(id="addPart" type="button" class="m-3 btn btn-primary") Add
 						label(for="clearSearchForm")
 						button(id="clearSearchForm" type="button" class="m-3 btn btn-info") Clear/Get All
+				if LIVE
+					a(class="button" href=LIVEADDRESS+"/files/e-club-inventory.xlsx" target="_blank") Download Inventory as Excel
+				else
+					a(class="button" href="http://localhost:3000/files/e-club-inventory.xlsx" target="_blank") Download Inventory as Excel
 		table(class="table table-sm")
 			thead
 				tr

@@ -23,6 +23,9 @@ router.post('/add-unapproved',auth.validateToken,async(req,res,next)=>{
     //May come as text from the client
     const qty = parseInt(req.body.qty);
     try {
+        if(Number.isInteger(qty)===false){
+            throw new Error('Input is not an integer: ' + req.body.qty);
+        }
         //Check if the part exists in the inventory DB
         const parts = await db.collection('inventory').find({_id:partID}).toArray();
         if(parts.length>0){
