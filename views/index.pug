@@ -6,6 +6,7 @@ block content
 	p Welcome to #{title}
 	if admin
 		p You are signed into the admin account.
+		//- button(id='slack-test-message-button') Send Test Slack Message
 	if user && !admin
 		p You are signed in as #{email}
 

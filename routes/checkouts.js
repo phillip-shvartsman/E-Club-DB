@@ -11,6 +11,7 @@ router.use(require('cookie-parser')());
 router.use(require('body-parser').urlencoded({ extended: true }));
 
 const auth = require('../auth/auth');
+const slack = require('../slack/slack');
 
 //ObjectID class used to create mongo unique ID objects
 var ObjectID = require('mongodb').ObjectID;
@@ -33,11 +34,13 @@ router.post('/add-unapproved',auth.validateToken,async(req,res,next)=>{
             const matchingParts = await db.collection('checkOut').find({partID:partID,userID:userID,type:'unapproved'}).toArray();
             if(matchingParts.length>0){
                 await db.collection('checkOut').updateOne({partID:partID,userID:userID,type:'unapproved'},{$inc:{amountToCheckOut:qty}});
-                res.end();
             }else{
                 await db.collection('checkOut').insertOne({partID:partID,userID:userID,type:'unapproved',amountToCheckOut:qty});
-                res.end();
             }
+            const unapprovedCheckOuts = await db.collection('checkOut').find({type:'unapproved'}).toArray();
+            const numCheckOuts = unapprovedCheckOuts.length;
+            await slack.sendMessage('There is a new part check out waiting to be approved from: ' + res.locals.decoded.fName + ' ' + res.locals.decoded.lName + '. # Unapproved Checkouts: ' + numCheckOuts);
+            res.end();
         }else{
             throw new Error('Part with that _id doesn\'t exist');
         }

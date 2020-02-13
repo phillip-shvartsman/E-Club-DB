@@ -456,5 +456,17 @@ $(document).ready(function(){
         $('#search-form').trigger('reset');
         createTimeout(searchParts);
     });
+    $('#slack-test-message-button').on('click',async()=>{
+        $.ajax({
+            method: 'POST',
+            url: '/slack/test-message',
+            success: function( res,status ) {
+                successFlash('Test message was sent!');
+            },
+            error: function(err,status){
+                errorFlash('Error sending the message!');
+            },
+        });
+    });
 
 });
