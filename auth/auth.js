@@ -3,6 +3,7 @@ const mongoDB = require('../db/mongoDB');
 const db = mongoDB.get();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const MobileDetect = require('mobile-detect');
 require('dotenv').config();
 
 
@@ -60,7 +61,13 @@ function validateAdmin(req,res,next){
 //Express Middleware function
 async function renderPage(req,res,next){
     const incomingJWT = req.cookies.jwt;
-    const partsInventory = await db.collection('inventory').find({}).toArray();
+    const md = new MobileDetect(req.headers['user-agent']);
+    let partsInventory = [];
+    if(md.mobile() === null){
+        partsInventory = await db.collection('inventory').find({}).toArray();
+    }else{
+        partsInventory = await db.collection('inventory').find({}).limit(100).toArray();
+    }
     try {
         const decoded = await jwt.verify(incomingJWT,process.env.COOKIESECRET);
         res.render('index', { title: 'Electronics Club @ OSU',partsInventory:partsInventory ,LIVEADDRESS:process.env.LIVEADDRESS, LIVE:process.env.LIVE, user:true, admin:decoded.admin,email:decoded.email });

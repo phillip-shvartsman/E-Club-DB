@@ -4,6 +4,7 @@ require('dotenv').config();
 var express = require('express');
 var router = express.Router();
 const mongoDB = require('../db/mongoDB');
+const MobileDetect = require('mobile-detect');
 
 const db = mongoDB.get();
 
@@ -48,9 +49,16 @@ function createSearchQuery(req)
 //req.body.loc      : Location in the lab
 //req.body.val      : Value eg 30K for a 30K resistor
 router.post('/search', async (req, res, next) => {
+
     try{
         const query = createSearchQuery(req);
-        const results = await db.collection('inventory').find(query).toArray();
+        const md = new MobileDetect(req.headers['user-agent']);
+        let results = [];
+        if(md.mobile() === null){
+            results = await db.collection('inventory').find(query).toArray();
+        }else{
+            results = await db.collection('inventory').find(query).limit(100).toArray();
+        }
         res.send(results);
     }
     catch(err){

@@ -11,7 +11,6 @@ router.use(require('body-parser').urlencoded({ extended: true }));
 const auth = require('../auth/auth');
 
 
-
 ////LOGIN/LOGOUT ROUTES////
 router.post('/login',auth.checkLoginCredentials,(req,res,next)=>{
     res.redirect('/');
