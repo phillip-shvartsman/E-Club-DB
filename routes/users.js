@@ -5,6 +5,7 @@ var express = require('express');
 var router = express.Router();
 const mongoDB = require('../db/mongoDB');
 const db = mongoDB.get();
+const logger = require('../logs/logger');
 
 router.use(require('cookie-parser')());
 router.use(require('body-parser').urlencoded({ extended: true }));
@@ -23,8 +24,8 @@ router.post('/get-all',auth.validateToken,auth.validateAdmin,async(req,res,next)
         }
         res.send({users:users});
     }catch(err){
-        console.error('Could not fetch users.');
-        console.error(err);
+        logger.error('Could not fetch users.');
+        logger.error(err);
         res.status(500).send({message:'Error in get-all endpoint.'});
     }
 });
@@ -32,8 +33,14 @@ router.post('/search',auth.validateToken,auth.validateAdmin,async(req,res,next)=
     const emailSearch = req.body.email;
     const limit = parseInt(req.body.limit);
     const emailRegExp = new RegExp('.*'+emailSearch+'.*','i');
-    const results = await db.collection('users').find({email:emailRegExp},{password:0}).limit(limit).toArray();
-    res.status(200).send({users:results});
+    let results;
+    try {
+        results = await db.collection('users').find({email:emailRegExp},{password:0}).limit(limit).toArray();
+        res.status(200).send({users:results});
+    }catch(err){
+        logger.error('Error in /users/search endpoint.');
+        logger.error(err,{emailSearch,limit,emailRegExp,results});
+    }
 });
 router.post('/add-new',auth.validateToken,auth.validateAdmin,auth.validateEmail,auth.confirmMatchingEmail,auth.validateUniqueEmail,auth.addNewUserAdmin);
 

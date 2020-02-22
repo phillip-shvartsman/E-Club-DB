@@ -5,6 +5,7 @@ var express = require('express');
 var router = express.Router();
 const mongoDB = require('../db/mongoDB');
 const MobileDetect = require('mobile-detect');
+const logger = require('../logs/logger');
 
 const db = mongoDB.get();
 
@@ -49,11 +50,13 @@ function createSearchQuery(req)
 //req.body.loc      : Location in the lab
 //req.body.val      : Value eg 30K for a 30K resistor
 router.post('/search', async (req, res, next) => {
-
+    let query;
+    let md;
+    let results = [];
     try{
-        const query = createSearchQuery(req);
-        const md = new MobileDetect(req.headers['user-agent']);
-        let results = [];
+        query = createSearchQuery(req);
+        md = new MobileDetect(req.headers['user-agent']);
+
         if(md.mobile() === null){
             results = await db.collection('inventory').find(query).toArray();
         }else{
@@ -62,22 +65,24 @@ router.post('/search', async (req, res, next) => {
         res.send(results);
     }
     catch(err){
-        console.error('Error in /search endpoint.');
-        console.error(err);
+        logger.error('Error in /search endpoint.');
+        logger.error(err,{query,md,results});
         res.status(500).end();
     }
     
 });
 
 router.post('/get-single-part', async(req,res,next)=>{
+    let partID;
+    let result;
     try {
-        const partID = new ObjectID(req.body._id);
-        const result = await db.collection('inventory').find({_id:partID}).toArray();
+        partID = new ObjectID(req.body._id);
+        result = await db.collection('inventory').find({_id:partID}).toArray();
         res.send(result[0]);
     }
     catch(err){
-        console.error('Error in /get-single-part endpoint.');
-        console.error(err);
+        logger.error('Error in /get-single-part endpoint.');
+        logger.error(err,{partID,result});
         res.status(500).end();
     }
 });
@@ -103,8 +108,8 @@ router.post('/add', auth.validateToken,auth.validateAdmin, async (req, res, next
         await db.collection('inventory').insertOne(req.body);
         res.end();
     }catch(err){
-        console.error('Error in /add endpoint.');
-        console.error(err);
+        logger.error('Error in /add endpoint.');
+        logger.error(err,{amountCheckedOut:req.body.amountCheckedOut});
         res.status(500).end();
     }
 });
@@ -118,8 +123,8 @@ router.post('/delete',auth.validateToken,auth.validateAdmin, async (req, res, ne
         res.end();
     }
     catch(err){
-        console.error('Error in /delete endpoint.');
-        console.error(err);
+        logger.error('Error in /delete endpoint.');
+        logger.error(err,{_id:req.body._id});
         res.status(500).end();
     }
 });
@@ -135,8 +140,8 @@ router.post('/modify',auth.validateToken,auth.validateAdmin, async (req,res,next
         res.end();
     }
     catch(err){
-        console.error('Error in /modify endpoint.');
-        console.error(err);
+        logger.error('Error in /modify endpoint.');
+        logger.error(err,{_id:req.body._id});
         res.status(500).end();
     }
 });

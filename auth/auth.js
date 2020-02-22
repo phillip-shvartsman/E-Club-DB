@@ -9,6 +9,7 @@ require('dotenv').config();
 const nodemailer = require('nodemailer');
 const {google} = require('googleapis');
 const ObjectID = require('mongodb').ObjectID;
+const logger = require('../logs/logger');
 
 
 require('dotenv').config();
@@ -31,8 +32,8 @@ async function checkLoginCredentials(req,res,next){
     try {
         user = await findByEmail(req.body.email.toLowerCase());
     }catch(err){
-        console.error('There was an error with a provided username');
-        console.error(err);
+        logger.error('There was an error with a provided email.');
+        logger.error(err,{user});
     }
     if(user){
         const valid = await bcrypt.compare(req.body.password,user.password);
@@ -43,9 +44,11 @@ async function checkLoginCredentials(req,res,next){
             res.cookie('jwt',newJWT);
             res.end();
         }else{
+            logger.error('User used wrong password');
             res.status(500).send({message:'Invalid password.'});
         }
     }else{
+        logger.error('Email used does not exist',{user});
         res.status(500).send({message:'Email does not exist'});
     }
 }
@@ -58,7 +61,7 @@ async function validateToken(req,res,next){
         res.locals.decoded = decoded;
         return next();
     }catch(err){
-        console.error(err);
+        logger.error('Incoming JWT is either invalid or expired',{err,incomingJWT});
         res.status(500).send({message:'Your authentication token is invalid or expired.'});
     }
 }
@@ -67,6 +70,7 @@ function validateAdmin(req,res,next){
     if(res.locals.decoded.admin===true){
         return next();
     }else{
+        logger.error('Someone tried to access an admin endpoint',{user:res.locals.decoded});
         res.status(403).send({message:'You are not on the admin account'});
     }
 }
@@ -83,8 +87,7 @@ async function renderPage(req,res,next){
         }
     }
     catch(err){
-        console.error('There was an issue in auth.renderPage');
-        console.error(err);
+        logger.error('There was an issue in auth.renderPage',{err,incomingJWT,md,partsInventory});
         res.send(500).send({message:'Could not fetch the inventory'});
     }
     const load_data = {title: 'Electronics Club @ OSU Parts Inventory',partsInventory:partsInventory ,LIVEADDRESS:process.env.LIVEADDRESS, LIVE:process.env.LIVE };
@@ -104,13 +107,13 @@ async function renderPage(req,res,next){
         load_data.admin = decoded.admin;
         load_data.email = decoded.email;
     } catch(err){
-        if(err.JsonWebTokenError === 'jwt must be provided'){
-            console.log('Login with no JWT');
-            console.log(err);
+        if(err.message === 'jwt must be provided'){
+            logger.info('Access with no JWT');
+            logger.info(err);
         }
         else {
-            console.error('Problem decoding JWT.');
-            console.error(err);
+            logger.error('Problem decoding JWT.');
+            logger.error(err);
         }
         load_data.admin = false;
         load_data.user = false;
@@ -129,6 +132,7 @@ async function validateEmail(req,res,next){
     if(re.test(String(email).toLowerCase())){
         next();
     }else{
+        logger.error('The email sent here is invalid',{email});
         res.status(401).send({message:'This email is not a valid email.'});
     }
 }
@@ -138,6 +142,7 @@ async function validatePassword(req,res,next){
     if(password.length>=8&&password.length<=32&&password===passwordConfirm){
         next();
     }else{
+        logger.error('Passwords do not match or do not meet qualifications.',{password,passwordConfirm});
         res.status(401).send({message:'The password you used is not valid.'});
     }
 
@@ -152,6 +157,7 @@ async function validateUniqueEmail(req,res,next){
             res.locals.tempUser = true;
             next();
         } else {
+            logger.error('Email is not unique.',{email,sameEmail});
             res.status(409).send({message:'Email exists already'});
         }
     }
@@ -163,6 +169,7 @@ async function validateNameDotNum(req,res,next){
     if(fName.length>1 && lName.length>1 && dNum>=0){
         next();
     }else{
+        logger.error('fname,lname,dNum issue',{fName,lName,dNum});
         res.status(401).send({message:'The first name, last name, or dot number you provided is not valid.'});
     }
 }
@@ -171,6 +178,7 @@ async function confirmMatchingEmail(req,res,next){
     if(req.body.email===req.body.confirmEmail){
         next();
     } else{
+        logger.error('Emails do not match.',{confirmEmail:req.body.confirmEmail,email:req.body.email});
         res.status(401).send({message:'Emails do not match'});
     }
 }
@@ -191,7 +199,7 @@ async function createNewUser(req,res,next){
     const lName = req.body.lName;
     const dNum = req.body.dNum;
     const tempUser = res.locals.tempUser;
-    console.log(tempUser);
+    logger.info('Creating temp user',tempUser);
     try {
         const hash = await bcrypt.hash(password,10);
         if(tempUser  === true){
@@ -203,8 +211,8 @@ async function createNewUser(req,res,next){
         next();
     }
     catch(err){
-        console.error('Problem inserting a new user.');
-        console.error(err);
+        logger.error('Problem inserting a new user.');
+        logger.error(err,{email,password,fName,lName,dNum,tempUser});
         res.status(500).send({message:'Could not add you to the database'});
     }
 }
@@ -212,7 +220,12 @@ async function refreshJWT(req,res,next){
     const user = res.locals.decoded;
     delete user['iat'];
     delete user['exp'];
-    const newJWT = jwt.sign(user,process.env.COOKIESECRET,{ expiresIn: '15m' });
+    let newJWT;
+    try {
+        newJWT = jwt.sign(user,process.env.COOKIESECRET,{ expiresIn: '15m' });
+    }catch(err){
+        logger.error('Error signing JWT',{user});
+    }
     res.cookie('jwt',newJWT);
     res.end();
 }
@@ -226,16 +239,19 @@ async function resetPassword(req,res,next){
         try {
             await db.collection('users').updateOne({email:user.email},{$set:{password:hash}});
         }catch(err){
-            console.error('There was an issue with setting the password to the reset password');
-            console.error(err);
+            logger.error('There was an issue with setting the password to the reset password');
+            logger.error(err,{user,token,hash,email,result});
             res.status(500).send({message:'There was an error resetting your password.'});
         }
         let smtpTransport;
+        let OAuth2;
+        let oauth2Client;
+        let accessToken;
         try {
-            const OAuth2 = google.auth.OAuth2;
-            const oauth2Client = new OAuth2(process.env.GMAIL_CLIENT_ID,process.env.GMAIL_CLIENT_SECRET,'https://developers.google.com/oauthplayground');
+            OAuth2 = google.auth.OAuth2;
+            oauth2Client = new OAuth2(process.env.GMAIL_CLIENT_ID,process.env.GMAIL_CLIENT_SECRET,'https://developers.google.com/oauthplayground');
             oauth2Client.setCredentials({refresh_token:process.env.GMAIL_REFRESH_TOKEN});
-            const accessToken = oauth2Client.getAccessToken();
+            accessToken = oauth2Client.getAccessToken();
             smtpTransport = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
@@ -248,15 +264,15 @@ async function resetPassword(req,res,next){
                 }
             });
         } catch(err){
-            console.error('There was an error in the Oauth2 pipeline for google');
-            console.error(err);
+            logger.error('There was an error in the Oauth2 pipeline for google');
+            logger.error(err,{OAuth2,oauth2Client,accessToken});
             res.status(500).send({message:'There was an error sending the password reset email.'});
         }
         const html = '<p>To reset your password, follow this link:</p>' +
             '<a href="' + process.env.LIVEADDRESS + '/reset-password/' + user._id + '/' + token + '">' + 'https://www.inventory-e.club/' + 'reset-password/' + user._id + '/' + token + '</a>' +
             '<br><br>' +
             '<p>--Team</p>';
-
+        
 
         const mailOptions = {
             from: 'electronicsosu@gmail.com',
@@ -265,7 +281,7 @@ async function resetPassword(req,res,next){
             generateTextFromHTML: true,
             html: html
         };
-        
+        logger.info('Email will be sent with follow options.',{html,mailOptions});
         try {
             smtpTransport.sendMail(mailOptions, (error, response) => {
                 error ? console.log(error) : console.log(response);
@@ -273,8 +289,8 @@ async function resetPassword(req,res,next){
                 res.status(200).end();
             });
         } catch(err){
-            console.error('There was an error sending email');
-            console.error(err);
+            logger.error('There was an error sending email');
+            logger.error(err);
             res.status(500).send({message:'There was an issue sending your password reset email.'});
         }
         
@@ -304,7 +320,7 @@ async function newPassword(req,res,next){
         next();
     } catch(err)
     {
-        console.log(err);
+        logger.error(err);
         res.locals.showResetPassword = false;
         res.locals.resetPassword = false;
         res.locals.valid_reset_link = false;
@@ -317,12 +333,13 @@ async function setNewPassword(req,res,next){
     const newPassword = req.body.newPassword;*/
     const userID = ObjectID(req.body.userID);
     const hash = await bcrypt.hash(req.body.password,10);
+    let user;
     try {
         await db.collection('users').updateOne({_id:userID},{$set:{password:hash}});
-        const user = await db.collection('users').find({_id:userID}).toArray();
+        user = await db.collection('users').find({_id:userID}).toArray();
         res.send({email:user[0].email});
     }catch(err){
-        console.log(err);
+        console.log(err,{userID,hash,user});
         res.status(500).end();
     }
 }
@@ -336,19 +353,18 @@ async function validateResetToken(req,res,next){
             if(valid){
                 next();
             }else{
-                console.error('There was an error with a password reset token.');
-                console.error(token);
-                console.error(user);
+                logger.error('There was an error with a password reset token.');
+                logger.error(token);
+                logger.error(user);
                 res.status(500).send({message:'There was a problem with your password reset token.'}); 
             }
         }else{
-            console.error('This user does not exist.');
-            console.error({userID:userID,token:token});
+            logger.error('This user does not exist.0',{userID:userID,token:token});
             res.status(500).send({messge:'This is an invalid token.'});
         }
     } catch(err){
-        console.error('There was an error with a password reset token.');
-        console.error(err);
+        logger.error('There was an error with a password reset token.');
+        logger.error(err,{userID,token});
         res.status(500).send({message:'There was a problem with your password reset token.'});
     }
 }
