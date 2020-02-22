@@ -215,18 +215,11 @@ async function resetPassword(req,res,next){
             console.error(err);
             res.status(500).send({message:'There was an error sending the password reset email.'});
         }
-        let html;
-        if(process.env.LIVE===true){
-            html = '<p>To reset your password, follow this link:</p>' +
-            '<a href=' + 'https://www.inventory-e.club/' + 'reset-password/' + user._id + '/' + token + '">' + 'https://www.inventory-e.club/' + 'reset-password/' + user._id + '/' + token + '</a>' +
+        const html = '<p>To reset your password, follow this link:</p>' +
+            '<a href="' + process.env.LIVEADDRESS + '/reset-password/' + user._id + '/' + token + '">' + 'https://www.inventory-e.club/' + 'reset-password/' + user._id + '/' + token + '</a>' +
             '<br><br>' +
             '<p>--Team</p>';
-        } else {
-            html = '<p>To reset your password, follow this link:</p>' +
-            '<a href=' + 'localhost:3000/' + 'reset-password/' + user._id + '/' + token + '">' + 'localhost:3000/' + 'reset-password/' + user._id + '/' + token + '</a>' +
-            '<br><br>' +
-            '<p>--Electronics Club at OSU</p>';
-        }
+
 
         const mailOptions = {
             from: 'electronicsosu@gmail.com',
