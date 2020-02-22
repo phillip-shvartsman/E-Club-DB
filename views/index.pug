@@ -10,6 +10,8 @@ block content
 	if user && !admin
 		p You are signed in as #{email}
 
+	if showResetPassword
+		include reset-password-modal.pug
 
 	//- Flash messages used by the function successFlash and errorFlash
 	div(id="successFlash" class="alert alert-success" style="display:none; z-index:500; position:fixed;")
@@ -18,6 +20,21 @@ block content
 
 	//- If not logged in display the following login form.
 	if !user
+		div(class="modal fade" id="forgot-password-modal")
+				//- When you click on the part in the search results, its information is stored here to be used later.
+				div(class="modal-dialog")
+					div(class="modal-content")
+						#part-options
+							div(class="modal-header")
+								h4(class="modal-title") Please enter the email for the account.
+						form(id="forgot-password-form" class='m-3')
+							#input-row.form-row
+								div(class="form-group col")
+									label(for="email") Email:
+									input(type="text" id="forgot-password-email" name="email" min="1" class="form-control" placeholder="Email" required)
+							div(class="form-row")
+								label(for="send-email")
+								button(id="submit-reset-password" type="submit" class="m-3 btn btn-primary") Reset
 		div(id="buttons-container")
 			button(id="show-login" type="button" class="btn btn-primary mr-3") Login
 			button(id="show-register" type="button" class="btn btn-primary") Register
@@ -28,14 +45,15 @@ block content
 				#login-row.form-row
 					div(class="form-group col")
 						label(for="email") Email
-						input(type="text" class="form-control" id="email" name="email" placeholder="Email")
+						input(type="text" class="form-control" id="login-email" name="email" placeholder="Email")
 					div(class="form-group col")
 						label(for="password") Password
-						input(type="password" class="form-control" id="password" name="password" placeholder="Password")
+						input(type="password" class="form-control" id="login-password" name="password" placeholder="Password")
 				div(class="form-row")
 					label(for="login")
 					button(id="login" type="submit" class="btn btn-primary mr-3") Login
-					button(class="cancel-login-register" type="button" class="btn btn-danger") Cancel
+					button(class="cancel-login-register" type="button" class="btn btn-danger mr-3") Cancel
+					button(id="forgot-password" type="button" class="btn btn-danger") Forgot Password
 
 		//-Register form.
 		div(class="container" style="display:none" id="register-container")
@@ -79,7 +97,10 @@ block content
 			li(class="nav-item")
 				a(class="nav-link" href="#" id="check-out-tab") Check-outs
 			li(class="nav-item")
-				a(class="nav-link" href="#" id="requests-tab") Requests 
+				a(class="nav-link" href="#" id="requests-tab") Requests
+		if admin
+			li(class="nav-item")
+				a(class="nav-link" href="#" id="users-tab") Users 
 
 	//-Contains the search form, the search results and associated modals.
 	#search-container.container

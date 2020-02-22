@@ -16,8 +16,9 @@ function createTimeout(cb)
 ////Flash Messages////
 //Add message to either errorFlash or successFlash then show it and fade it out
 //Can be found in index.pug
-function errorFlash(error)
+function errorFlash(error,duration)
 {
+    if (duration === undefined) duration = 1000;
     $('#errorFlash').hide();
     $('#errorFlash').html('<strong>Error!</strong> '+error);
 
@@ -25,19 +26,20 @@ function errorFlash(error)
         setTimeout(function(){
             $('#errorFlash').fadeOut('fast',function(){
             });
-        },1000);
+        },duration);
     });
     
 }
-function successFlash(message)
+function successFlash(message,duration)
 {
+    if (duration === undefined) duration = 1000;
     $('#successFlash').hide();
     $('#successFlash').html('<strong>Success!</strong> '+message);
     $('#successFlash').fadeIn('fast',function(){
         setTimeout(function(){
             $('#successFlash').fadeOut('fast',function(){
             });
-        },1000);
+        },duration);
     });
 }
 
@@ -129,9 +131,13 @@ async function closeAllContainers(){
     if($('#requests-container').is(':visible')){
         await $('#requests-container').fadeOut('fast').promise().done();
     }  
+    if($('#users-container').is(':visible')){
+        await $('#users-container').fadeOut('fast').promise().done();
+    }
     $('#requests-tab').removeClass('active');
     $('#search-tab').removeClass('active');
     $('#check-out-tab').removeClass('active');
+    $('#users-tab').removeClass('active');
     return Promise.resolve();
 }
 
