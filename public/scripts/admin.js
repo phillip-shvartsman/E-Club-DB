@@ -218,13 +218,31 @@ async function updateCheckOuts(){
             method: 'POST',
             url: '/checkouts/get-check-outs'
         });
-        console.log(data);
+        //console.log(data);
         const mustacheObject = buildCheckOutMustachObject(data);
         refreshCheckOutTable(mustacheObject);
         addClickEventsCheckOutTable();
     }catch(err){
         console.error(err);
         errorFlash('Could not get checkouts.');
+    }
+}
+function refreshUsersTable(users){
+    console.log(users);
+    const template = $('#users-table-template').html();
+    const html = Mustache.render(template,users);
+    $('#users-table-container').empty();
+    $('#users-table-container').html(html);
+}
+async function getUsers(){
+    try {
+        const users = await $.ajax({
+            method:'POST',
+            url:'/users/get-all'
+        });
+        refreshUsersTable(users);
+    }catch(err){
+        errorFlash('Problem retrieving all users.');
     }
 }
 function buildRequestsTable(requests){
@@ -250,7 +268,34 @@ async function getRequests(){
         errorFlash(err);
     }
 }
-
+async function searchUsers(){
+    await $('#email-search-results').slideUp('fast').promise().done();
+    const template = $('#user-search-result').html();
+    const email = $('#check-out-for-user-email').val();
+    const users = await $.ajax({
+        method:'POST',
+        url:'/users/search',
+        data:{email:email,limit:5}
+    });
+    const html = Mustache.render(template,users);
+    $('#email-search-results').empty();
+    $('#email-search-results').append(html);
+    await $('#email-search-results').slideDown('fast').promise().done();
+    applyUserSearchEffects();
+}
+function applyUserSearchEffects(){
+    $('.email-search-result').mouseover(function(){
+        $(this).css('background-color','#007bff');
+        $(this).css('color','white');
+    });
+    $('.email-search-result').mouseleave(function(){
+        $(this).css('background-color','white');
+        $(this).css('color','#212529');
+    });
+    $('.email-search-result').on('click',function(){
+        $('#check-out-for-user-email').val($(this).attr('email'));
+    });
+}
 function setRequestTriggers(){
     $('.request-email-icon').on('click',(e)=>{
         try {
@@ -343,6 +388,13 @@ $(document).ready(function(){
         await closeAllContainers();
         $('#requests-tab').addClass('active');
         await $('#requests-container').fadeIn('fast').promise().done();
+    });
+
+    $('#users-tab').on('click',async()=>{
+        getUsers();
+        await closeAllContainers();
+        $('#users-tab').addClass('active');
+        await $('#users-container').fadeIn('fast').promise().done();
     });
     
     //Modify entry button
@@ -456,8 +508,65 @@ $(document).ready(function(){
         $('#search-form').trigger('reset');
         createTimeout(searchParts);
     });
+    $('#show-new-user-form').on('click',async(e)=>{
+        $('#add-user-modal').modal('show');
+    });
+    $('#show-check-out-for-user').on('click',async(e)=>{
+        $('#modify-delete-modal').modal('hide');
+        $('#check-out-for-user-modal').modal('show');
+    });
+    $('#check-out-for-user-email').on('input',async(e)=>{
+        createTimeout(searchUsers);
+    });
+    $('#new-user-form').submit(async(e)=>{
+        e.preventDefault();
+        const formData = getFormData('#new-user-form');
+        try {
+            const response = await $.ajax({
+                method:'POST',
+                url:'/users/add-new',
+                data:{
+                    email:formData.newEmail,
+                    confirmEmail:formData.newEmailConfirm
+                }
+            });
+            console.log(response);
+            successFlash('Added the new user.');
+            $('#add-user-modal').modal('hide');
+            await getUsers();
+        }catch(err){
+            console.log(err);
+            errorFlash(err.responseJSON.message);
+        }
+    });
+    $('.new-email-match').on('input',async()=>{
+        const formData = getFormData('#new-user-form');
+        const emailConfirm = $('#newEmailConfirm')[0];
+        if(formData.newEmail!==formData.newEmailConfirm){
+            emailConfirm.setCustomValidity('Emails Don\'t Match');
+        }else{
+            emailConfirm.setCustomValidity('');
+        }
+    });
+    $('#submit-checkout-for-user-form').submit(async(e)=>{
+        e.preventDefault();
+        const formData = getFormData('#submit-checkout-for-user-form');
+        formData.partID = $('#storePart').attr('_id');
+        try{
+            const response = await $.ajax({
+                method:'POST',
+                url:'/checkouts/add-checkout-admin',
+                data:formData
+            });
+            successFlash('Check out added!');
+            $('#check-out-for-user-modal').modal('hide');
+        }catch(err){
+            console.log(err);
+            errorFlash(err.responseJSON.message);
+        }
+    });
     $('#slack-test-message-button').on('click',async()=>{
-        $.ajax({
+        await $.ajax({
             method: 'POST',
             url: '/slack/test-message',
             success: function( res,status ) {

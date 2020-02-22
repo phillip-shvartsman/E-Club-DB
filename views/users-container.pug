@@ -1,0 +1,21 @@
+div( class="container" id="users-container" style="display:none")
+    div(class="modal" id="add-user-modal")
+        div(class="modal-dialog")
+            div(class="modal-content")
+                div(class="modal-header")
+                    h4(class="modal-title") Enter an email for this new user.
+                form(id="new-user-form" class='m-3')
+                    #input-row.form-row
+                        div(class="form-group col")
+                            label(for="email") User Email
+                            input(type="email" id="newEmail" name="newEmail" class="form-control new-email-match" placeholder="Email" required)
+                    #input-row.form-row
+                        div(class="form-group col")
+                            label(for="email") Confirm Email
+                            input(type="email" id="newEmailConfirm" name="newEmailConfirm" class="form-control new-email-match" placeholder="Confirm Email" required)
+                    div(class="form-row")
+                        label(for="submit-new-user")
+                        button(id="submit-new-user" type="submit" class="m-3 btn btn-primary") Save
+    button(id="show-new-user-form" type="button" class="btn btn-primary mt-3") Add user
+    div(id="users-table-container")
+    //p Mama mia that a spicy ameat aball

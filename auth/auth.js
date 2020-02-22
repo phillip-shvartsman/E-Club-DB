@@ -43,10 +43,10 @@ async function checkLoginCredentials(req,res,next){
             res.cookie('jwt',newJWT);
             res.end();
         }else{
-            res.status(500).end();
+            res.status(500).send({message:'Invalid password.'});
         }
     }else{
-        res.status(500).end();
+        res.status(500).send({message:'Email does not exist'});
     }
 }
 
@@ -59,7 +59,7 @@ async function validateToken(req,res,next){
         return next();
     }catch(err){
         console.error(err);
-        res.status(500).end();
+        res.status(500).send({message:'Your authentication token is invalid or expired.'});
     }
 }
 
@@ -67,7 +67,7 @@ function validateAdmin(req,res,next){
     if(res.locals.decoded.admin===true){
         return next();
     }else{
-        res.status(403).end();
+        res.status(403).send({message:'You are not on the admin account'});
     }
 }
 //Express Middleware function
@@ -85,9 +85,9 @@ async function renderPage(req,res,next){
     catch(err){
         console.error('There was an issue in auth.renderPage');
         console.error(err);
-        res.end();
+        res.send(500).send({message:'Could not fetch the inventory'});
     }
-    const load_data = {title: 'Electronics Club @ OSU',partsInventory:partsInventory ,LIVEADDRESS:process.env.LIVEADDRESS, LIVE:process.env.LIVE };
+    const load_data = {title: 'Electronics Club @ OSU Parts Inventory',partsInventory:partsInventory ,LIVEADDRESS:process.env.LIVEADDRESS, LIVE:process.env.LIVE };
     
     if(res.locals.resetPassword === undefined){
         load_data.showResetPassword = false;
@@ -129,7 +129,7 @@ async function validateEmail(req,res,next){
     if(re.test(String(email).toLowerCase())){
         next();
     }else{
-        res.status(401).end();
+        res.status(401).send({message:'This email is not a valid email.'});
     }
 }
 async function validatePassword(req,res,next){
@@ -138,7 +138,7 @@ async function validatePassword(req,res,next){
     if(password.length>=8&&password.length<=32&&password===passwordConfirm){
         next();
     }else{
-        res.status(401).end();
+        res.status(401).send({message:'The password you used is not valid.'});
     }
 
 }
@@ -148,7 +148,12 @@ async function validateUniqueEmail(req,res,next){
     if(sameEmail.length===0){
         next();
     }else{
-        res.status(409).end();
+        if(sameEmail[0].temp === true){
+            res.locals.tempUser = true;
+            next();
+        } else {
+            res.status(409).send({message:'Email exists already'});
+        }
     }
 }
 async function validateNameDotNum(req,res,next){
@@ -158,7 +163,25 @@ async function validateNameDotNum(req,res,next){
     if(fName.length>1 && lName.length>1 && dNum>=0){
         next();
     }else{
-        res.status(401).end();
+        res.status(401).send({message:'The first name, last name, or dot number you provided is not valid.'});
+    }
+}
+async function confirmMatchingEmail(req,res,next){
+    req.body.confirmEmail = req.body.confirmEmail.toLowerCase();
+    if(req.body.email===req.body.confirmEmail){
+        next();
+    } else{
+        res.status(401).send({message:'Emails do not match'});
+    }
+}
+async function addNewUserAdmin(req,res,next){
+    const email = req.body.email;
+    const tempUser = res.locals.tempUser;
+    if(tempUser === true){
+        res.status(401).send({message:'This temp user exists already.'});
+    } else{
+        await db.collection('users').insertOne({email:email,password:'',fName:'',lName:'',dNUm:'',admin:false,temp:true});
+        res.status(200).end();
     }
 }
 async function createNewUser(req,res,next){
@@ -167,9 +190,23 @@ async function createNewUser(req,res,next){
     const fName = req.body.fName;
     const lName = req.body.lName;
     const dNum = req.body.dNum;
-    const hash = await bcrypt.hash(password,10);
-    const result = await db.collection('users').insertOne({email:email,password:hash,fName:fName,lName:lName,dNum:dNum,admin:false});
-    next();
+    const tempUser = res.locals.tempUser;
+    console.log(tempUser);
+    try {
+        const hash = await bcrypt.hash(password,10);
+        if(tempUser  === true){
+            await db.collection('users').updateOne({email:email},{$set:{email:email,password:hash,fName:fName,lName:lName,dNum:dNum,admin:false,temp:false}});
+        }
+        else {
+            await db.collection('users').insertOne({email:email,password:hash,fName:fName,lName:lName,dNum:dNum,admin:false,temp:false});
+        }
+        next();
+    }
+    catch(err){
+        console.error('Problem inserting a new user.');
+        console.error(err);
+        res.status(500).send({message:'Could not add you to the database'});
+    }
 }
 async function refreshJWT(req,res,next){
     const user = res.locals.decoded;
@@ -329,5 +366,7 @@ module.exports = {
     resetPassword,
     newPassword,
     setNewPassword,
-    validateResetToken
+    validateResetToken,
+    confirmMatchingEmail,
+    addNewUserAdmin
 };

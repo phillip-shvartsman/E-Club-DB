@@ -24,17 +24,19 @@ mongoDB.connect().then(()=>{
     app.use(cookieParser());
     app.use(express.static(path.join(__dirname, 'public')));
 
-    var index = require('./routes/index');
-    var requests = require('./routes/requests');
-    var parts = require('./routes/parts');
-    var checkouts = require('./routes/checkouts');
-    var slack = require('./routes/slack');
+    const index = require('./routes/index');
+    const requests = require('./routes/requests');
+    const parts = require('./routes/parts');
+    const checkouts = require('./routes/checkouts');
+    const slack = require('./routes/slack');
+    const users = require('./routes/users');
 
     app.use('/', index);
     app.use('/requests',requests);
     app.use('/parts',parts);
     app.use('/checkouts',checkouts);
     app.use('/slack',slack);
+    app.use('/users',users);
 
     // catch 404 and forward to error handler
     app.use(function(req, res, next) {

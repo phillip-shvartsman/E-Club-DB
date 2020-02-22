@@ -108,7 +108,7 @@ $(document).ready(function(){
         }
         catch(err){
             console.error(err);
-            errorFlash('Unable to register, most likely that the username is already in use.');
+            errorFlash(err.responseJSON.message);
         }
     });
 

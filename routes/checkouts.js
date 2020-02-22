@@ -16,6 +16,27 @@ const slack = require('../slack/slack');
 //ObjectID class used to create mongo unique ID objects
 var ObjectID = require('mongodb').ObjectID;
 
+async function partExists(partID){
+    const parts = await db.collection('inventory').find({_id:partID}).toArray();
+    if(parts.length>0) return true;
+    else return false;
+}
+async function addUnapproved(userID,partID,qty){
+    const matchingParts = await db.collection('checkOut').find({partID:partID,userID:userID,type:'unapproved'}).toArray();
+    if(matchingParts.length>0){
+        await db.collection('checkOut').updateOne({partID:partID,userID:userID,type:'unapproved'},{$inc:{amountToCheckOut:qty}});
+    }else{
+        await db.collection('checkOut').insertOne({partID:partID,userID:userID,type:'unapproved',amountToCheckOut:qty});
+    }
+}
+async function approvePart(checkOutID,userID,partID){
+    if(userID === undefined && partID === undefined) {
+        await db.collection('checkOut').updateOne({_id:checkOutID,type:'unapproved'},{$set:{type:'approved'}});
+    }else{
+        await db.collection('checkOut').update({partID:partID,userID:userID,type:'unapproved'},{$set:{type:'approved'}});
+    }
+
+}
 
 //User Endpoints
 router.post('/add-unapproved',auth.validateToken,async(req,res,next)=>{
@@ -27,16 +48,9 @@ router.post('/add-unapproved',auth.validateToken,async(req,res,next)=>{
         if(Number.isInteger(qty)===false){
             throw new Error('Input is not an integer: ' + req.body.qty);
         }
-        //Check if the part exists in the inventory DB
-        const parts = await db.collection('inventory').find({_id:partID}).toArray();
-        if(parts.length>0){
+        if(await partExists(partID)){
             //Check to see if the user already has this part added to their checkout
-            const matchingParts = await db.collection('checkOut').find({partID:partID,userID:userID,type:'unapproved'}).toArray();
-            if(matchingParts.length>0){
-                await db.collection('checkOut').updateOne({partID:partID,userID:userID,type:'unapproved'},{$inc:{amountToCheckOut:qty}});
-            }else{
-                await db.collection('checkOut').insertOne({partID:partID,userID:userID,type:'unapproved',amountToCheckOut:qty});
-            }
+            await addUnapproved(userID,partID,qty);
             const unapprovedCheckOuts = await db.collection('checkOut').find({type:'unapproved'}).toArray();
             const numCheckOuts = unapprovedCheckOuts.length;
             await slack.sendMessage('There is a new part check out waiting to be approved from: ' + res.locals.decoded.fName + ' ' + res.locals.decoded.lName + '. # Unapproved Checkouts: ' + numCheckOuts);
@@ -120,6 +134,8 @@ async function getPartDetails(checkOuts){
     for(let i = 0; i<checkOuts.length;i = i + 1){
         const partID = new ObjectID(checkOuts[i].partID);
         const detailedCheckOut = await db.collection('inventory').find({_id:partID}).toArray();
+        console.log(checkOuts[i]);
+        console.log(detailedCheckOut);
         detailedCheckOut[0].amountToCheckOut = checkOuts[i].amountToCheckOut;
         detailedCheckOut[0].type = checkOuts[i].type;
         detailedCheckOut[0].userID = checkOuts[i].userID;
@@ -135,7 +151,7 @@ async function getPartDetails(checkOuts){
 router.post('/approve-part',auth.validateToken,auth.validateAdmin,async(req,res,next)=>{
     const checkOutID = new ObjectID(req.body.checkOutID);
     try{
-        await db.collection('checkOut').updateOne({_id:checkOutID,type:'unapproved'},{$set:{type:'approved'}});
+        await approvePart(checkOutID);
         res.end();
     }catch(err){
         console.error('Error in /approve-part endpoint.');
@@ -202,10 +218,49 @@ router.post('/get-check-outs',auth.validateToken,auth.validateAdmin,async(req,re
         const detailedCheckOut = await getPartDetails(checkOuts);
         res.send({users:users,detailedCheckOut:detailedCheckOut});
     }catch(err){
-        console.error('Error in /get-all-checkouts endpoint.');
+        console.error('Error in /get-check-outs endpoint.');
         console.error(err);
         res.status(500).end();
     }
 });
 
+router.post('/add-checkout-admin',auth.validateToken,auth.validateAdmin,async(req,res,next)=>{
+    console.log(req.body);
+    const userEmail = req.body['user-email'].toLowerCase();
+    const qty = parseInt(req.body.qty);
+    const partID = ObjectID(req.body.partID);
+    let user;
+    if(partExists(partID)){
+        try {
+            user = await db.collection('users').find({email:userEmail}).toArray();
+            if(user.length<1 || user.length>1){
+                throw new Error('Did not get the correct amount of users.');
+            } 
+        }catch(err){
+            console.error('Error in add-checkout-admin endpoint');
+            console.error(err);
+            res.status(500).send({message:'Error finding the user with the sent ID.'});
+        }
+        const userID = ObjectID(user[0]._id);
+        console.log(user);
+        try {
+            await addUnapproved(userID,partID,qty);
+        } catch(err){
+            console.error('Could not add unapproved.');
+            console.error(err);
+            res.status(500).send({messge:'Error adding the new unapproved check-outs.'});
+        }
+        try {
+            await approvePart(null,userID,partID);
+        }catch(err){
+            console.error('Could not approved newly added unapproved part');
+            console.error(err);
+            res.status(500).send({message:'Error approving the part.'});
+        }
+        res.status(200).end();
+    } else{
+        res.status(500).send({messge:'Part does not exist.'});
+    }
+
+});
 module.exports = router;

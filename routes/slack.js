@@ -15,7 +15,7 @@ const auth = require('../auth/auth');
 var ObjectID = require('mongodb').ObjectID;
 
 
-router.post('/test-message',auth.validateAdmin,async (req, res, next) => {
+router.post('/test-message',auth.validateToken,auth.validateAdmin,async (req, res, next) => {
     try {
         await slack.sendTestMessage();
         res.end();

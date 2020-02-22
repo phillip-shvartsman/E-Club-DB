@@ -4,8 +4,9 @@
 
 var timeout = null;
 //Create a timeout that can be reset based on a callback
-function createTimeout(cb)
+function createTimeout(cb,duration)
 {
+    if(duration===undefined) duration=500;
     clearTimeout(timeout);
     timeout = setTimeout(function()
     {
@@ -75,8 +76,10 @@ async function applyRowEffects(){
     });
     //Only for User
     $('.result-row').on('click',function(){
-        const uniq_id = $(this).attr('_id');
-        $('#storePart').attr('_id',uniq_id);
+        const _id = $(this).attr('_id');
+        const partName = $(this).attr('partName');
+        $('#storePart').attr('_id',_id);
+        $('#storePart').attr('partName',partName);
         $('#qty-modal').modal('show');
     });
 }

@@ -1,9 +1,11 @@
 extends layout
 
 block content
-	//- Title
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	//Developed my Phillip Shvartsman. github=https://github.com/phillip-shvartsman linkedin=https://www.linkedin.com/in/phillip-shvartsman-723856102/
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	h1= title
-	p Welcome to #{title}
+	//-p Welcome to #{title}
 	if admin
 		p You are signed into the admin account.
 		//- button(id='slack-test-message-button') Send Test Slack Message
@@ -12,6 +14,8 @@ block content
 
 	if showResetPassword
 		include reset-password-modal.pug
+	if user && !admin
+		include greetings-modal.pug
 
 	//- Flash messages used by the function successFlash and errorFlash
 	div(id="successFlash" class="alert alert-success" style="display:none; z-index:500; position:fixed;")
@@ -88,6 +92,7 @@ block content
 		div(class="form-row")
 					label(for="logout")
 					button(id="logout" type="button" class="btn btn-primary") Logout
+					button(id="show-greetings-modal-button" type="button" class="btn btn-primary ml-3") Help
 
 	//- Different tabs at the top of th screen.
 	ul(class="nav nav-tabs justify-content-center" id="top-nav")
@@ -127,6 +132,7 @@ block content
 
 		//- If you are an admin, you don't have the quantity set modal but you have a modal to change and delete parts from the database.
 		if admin
+			include check-out-for-user-modal.pug
 			div(class="modal fade" id="modify-delete-modal" value="")
 				//- When you click on the part in the search results, its information is stored here to be used later.
 				div(id="storePart" value="" style="display:none")
@@ -136,8 +142,11 @@ block content
 							div(class="modal-header")
 								h4(class="modal-title") What do you want to do with this part?
 							div(class="modal-body")
-								button(type="button" id="modify-button" class="btn btn-primary") Modify
-								button(type="button" id="delete-button" class="btn btn-danger") Delete
+								div(class='row')
+									button(type="button" id="show-check-out-for-user" class="btn btn-primary m-2") Checkout for User
+								div(class='row')
+									button(type="button" id="modify-button" class="btn btn-primary m-2") Modify
+									button(type="button" id="delete-button" class="btn btn-danger m-2") Delete
 						form(id="modify-form" class='m-3' style="display:none")
 							#input-row.form-row
 								div(class="form-group col")
@@ -319,6 +328,9 @@ block content
 				#all-requests.mt-3
 
 	//-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+	//-////USERS-CONTAINER//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	if admin
+		include users-container.pug
+	//-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//-Include the mustache templates.
 	include mustache-templates.pug

@@ -1,6 +1,6 @@
 //- Mustache JS Templates
 script(id="result-row-template" type="template")
-    tr(class="result-row" _id="{{_id}}")
+    tr(class="result-row" _id="{{_id}}" partName="{{partName}}")
         td {{partName}}
         td {{cat}}
         td {{subCat}}
@@ -137,6 +137,26 @@ if user
                                 td {{notes}} {{/returned}} {{/hasReturned}}
 //- Mustache JS Templates that only are available for admin.js
 if admin
+    script(id="user-search-result" type="template")
+        tbody {{#users}}
+            tr
+                td(_id="{{_id}}" email="{{email}}" class="email-search-result") {{email}}
+            | {{/users}}
+    script(id="users-table-template" type="template")
+        h2 Current Users
+        table(class='table table-sm users-table mt-3')
+            thead
+                th Email
+                th First Name
+                th Last Name Dot Num
+                th # of Checkouts 
+            tbody {{#users}}
+                tr
+                    td {{email}}
+                    td {{fName}}
+                    td {{lName}}.{{dNum}}
+                    td {{numCO}}
+                    | {{/users}}
     script(id="admin-request-entry" type="template")
         #request-copy-email(style='display:none')
         table(class="table table-sm check-out-table mt-3")
@@ -150,7 +170,7 @@ if admin
             tr
                 td(colspan="5") {{requestText}}
     script(id="admin-check-out-table-template" type="template")
-        h2 Unapproved Check-Outs 
+        h3 Unapproved Check-Outs 
         div(id='unapproved-check-outs') {{#unapproved}}
             div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
                 p {{fName}} {{lName}}.{{dNum}} {{email}}
@@ -183,7 +203,7 @@ if admin
                             td {{notes}}
                             td <img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class='approve-part' src="/images/check.png"> {{/parts}}
             | {{/unapproved}}
-        h2 Approved Check-Outs
+        h3 Approved Check-Outs
         div(id='approved-check-outs') {{#approved}}
             div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
                 p {{fName}} {{lName}}.{{dNum}} {{email}}
@@ -216,7 +236,7 @@ if admin
                             td {{notes}}
                             td <img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class='set-part-out' src="/images/check.png"><img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class='unapprove-part' src="/images/up-arrow.png"> {{/parts}}
             | {{/approved}}
-        h2 Parts Out
+        h3 Parts Out
         div(id='parts-out') {{#out}}
             div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
                 p {{fName}} {{lName}}.{{dNum}} {{email}}
@@ -249,7 +269,7 @@ if admin
                             td {{notes}}
                             td <img _id="{{_id}}" class='check-in-part' src="/images/check.png"> {{/parts}}
             | {{/out}}
-        h2 Parts Returned
+        h3 Parts Returned
         div(id='parts-returned') {{#returned}}
             div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
                 p {{fName}} {{lName}}.{{dNum}} {{email}}
