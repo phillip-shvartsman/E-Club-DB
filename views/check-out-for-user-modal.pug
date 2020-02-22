@@ -2,18 +2,18 @@ div(class="modal" id="check-out-for-user-modal")
     div(class="modal-dialog")
         div(class="modal-content")
             div(class="modal-header")
-                h4(class="modal-title") Add check-out.
+                h4(class="modal-title" id="check-out-for-user-modal-title") Add check-out.
             div(class="modal-body")
                 form(id="submit-checkout-for-user-form" class='m-3')
                     #input-row.form-row
                         div(class="form-group col")
                             label(for="qty") Quantity
-                            input(type="qty" id="check-out-for-user-qty" name="qty" class="form-control" placeholder="Quantity" required)
+                            input(type="number" min="1" id="check-out-for-user-qty" name="qty" class="form-control" placeholder="Quantity" required autocomplete="off")
                     #input-row.form-row
                         div(class="form-group col")
                             label(for="email") User Email
-                            input(type="email" id="check-out-for-user-email" name="user-email" class="form-control" placeholder="User Email" required)
+                            input(type="email" id="check-out-for-user-email" name="user-email" class="form-control" placeholder="User Email" required autocomplete="off")
                     div(id='email-search-results' class='row m-2')
                     div(class="form-row")
                         label(for="submit-check-out-for-user")
-                        button(id="submit-check-out-for-user" type="submit" class="m-3 btn btn-primary") Save
+                        button(id="submit-check-out-for-user" type="submit" class="btn btn-primary" style="margin:auto") Save

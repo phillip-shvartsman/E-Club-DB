@@ -143,8 +143,6 @@ async function getPartDetails(checkOuts){
     for(let i = 0; i<checkOuts.length;i = i + 1){
         const partID = new ObjectID(checkOuts[i].partID);
         const detailedCheckOut = await db.collection('inventory').find({_id:partID}).toArray();
-        logger.info(checkOuts[i]);
-        logger.info(detailedCheckOut);
         detailedCheckOut[0].amountToCheckOut = checkOuts[i].amountToCheckOut;
         detailedCheckOut[0].type = checkOuts[i].type;
         detailedCheckOut[0].userID = checkOuts[i].userID;

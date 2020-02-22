@@ -281,10 +281,10 @@ async function resetPassword(req,res,next){
             generateTextFromHTML: true,
             html: html
         };
-        logger.info('Email will be sent with follow options.',{html,mailOptions});
+        logger.info('Email will be sent with follow options.',{mailOptions});
         try {
             smtpTransport.sendMail(mailOptions, (error, response) => {
-                error ? console.log(error) : console.log(response);
+                error ? logger.info(error) : logger.info('Successfully sent email',{response});
                 smtpTransport.close();
                 res.status(200).end();
             });

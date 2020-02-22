@@ -92,20 +92,22 @@ block content
 		div(class="form-row")
 					label(for="logout")
 					button(id="logout" type="button" class="btn btn-primary") Logout
-					button(id="show-greetings-modal-button" type="button" class="btn btn-primary ml-3") Help
+					if user && !admin
+						button(id="show-greetings-modal-button" type="button" class="btn btn-primary ml-3") Help
 
 	//- Different tabs at the top of th screen.
 	ul(class="nav nav-tabs justify-content-center" id="top-nav")
 		li(class="nav-item")
 			a(class="nav-link active" href="#" id='search-tab') Search
+		if admin
+			li(class="nav-item")
+				a(class="nav-link" href="#" id="users-tab") Users 
 		if user
 			li(class="nav-item")
 				a(class="nav-link" href="#" id="check-out-tab") Check-outs
 			li(class="nav-item")
 				a(class="nav-link" href="#" id="requests-tab") Requests
-		if admin
-			li(class="nav-item")
-				a(class="nav-link" href="#" id="users-tab") Users 
+
 
 	//-Contains the search form, the search results and associated modals.
 	#search-container.container
@@ -120,7 +122,7 @@ block content
 					div(class="modal-content")
 						#part-options
 							div(class="modal-header")
-								h4(class="modal-title") How much of this item do you want to check out?
+								h4(id="qty-modal-title" class="modal-title") How much of this item do you want to check out?
 						form(id="qty-form" class='m-3')
 							#input-row.form-row
 								div(class="form-group col")
@@ -128,7 +130,7 @@ block content
 									input(type="number" id="qty" name="qty" min="1" class="form-control" placeholder="Quantity" required)
 							div(class="form-row")
 								label(for="sendQty")
-								button(id="sendQty" type="submit" class="m-3 btn btn-primary") Save
+								button(id="sendQty" type="submit" style="margin:auto" class="btn btn-primary") Save
 
 		//- If you are an admin, you don't have the quantity set modal but you have a modal to change and delete parts from the database.
 		if admin
@@ -140,13 +142,15 @@ block content
 					div(class="modal-content")
 						#part-options
 							div(class="modal-header")
-								h4(class="modal-title") What do you want to do with this part?
+								h4(class="modal-title" id="modify-delete-modal-title") What do you want to do with this part?
 							div(class="modal-body")
 								div(class='row')
-									button(type="button" id="show-check-out-for-user" class="btn btn-primary m-2") Checkout for User
-								div(class='row')
-									button(type="button" id="modify-button" class="btn btn-primary m-2") Modify
-									button(type="button" id="delete-button" class="btn btn-danger m-2") Delete
+									div(class="col")
+										button(type="button" id="show-check-out-for-user" class="btn btn-primary m-2") Checkout for User
+									div(class="col")
+										button(type="button" id="modify-button" class="btn btn-primary m-2") Modify
+									div(class="col")
+										button(type="button" id="delete-button" class="btn btn-danger m-2") Delete
 						form(id="modify-form" class='m-3' style="display:none")
 							#input-row.form-row
 								div(class="form-group col")
@@ -250,7 +254,7 @@ block content
 			//- On first load, have the server generate the html
 			tbody(id='search-table-body')
 				each part in partsInventory
-					tr(class="result-row" _id= part._id)
+					tr(class="result-row" _id= part._id partName= part.partName)
 						td= part.partName
 						td= part.cat
 						td= part.subCat
@@ -265,7 +269,7 @@ block content
 
 	//-///////////////CHECK-OUT-CONTAINER////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	if user
-		div(class="container" id="check-out-container" style="display:none")
+		div(class="container mt-2" id="check-out-container" style="display:none")
 			if admin
 				form(id='filter-check-outs-form')
 					#input-row.form-row
@@ -284,11 +288,12 @@ block content
 							#input-row.form-row
 								div(class="form-group col")
 									label(for="quantity") Quantity
-									input(type="text" id="modify-check-out-qty" name="qty" class="form-control" placeholder="Quantity")
+									input(type="number" min="1" id="modify-check-out-qty" name="qty" class="form-control" placeholder="Quantity")
 							div(class="form-row")
 								div(class='form-group col')
 									label(for="modify-qty")
 									button(id="modify-qty" type="submit" class="m-3 btn btn-primary") Save
+								div(class="col")
 								div(class='form-group col')
 									label(for="remove")
 									button(id='remove-unapproved-check-out' type="button" class="m-3 btn btn-warning") Remove

@@ -71,7 +71,11 @@ async function applyRowEffects(){
     //Only Used For Admin
     $('.result-row').on('click',function(){
         const uniq_id = $(this).attr('_id');
+        const partName = $(this).attr('partName');
         $('#storePart').attr('_id',uniq_id);
+        $('#storePart').attr('partName',partName);
+        $('#modify-delete-modal-title').text('What do you want to do with: ' + partName);
+        $('#check-out-for-user-modal-title').text('Enter quantity and email of user for: ' + partName);
         $('#modify-delete-modal').modal('show');
     });
     //Only for User
@@ -80,6 +84,7 @@ async function applyRowEffects(){
         const partName = $(this).attr('partName');
         $('#storePart').attr('_id',_id);
         $('#storePart').attr('partName',partName);
+        $('#qty-modal-title').text('Enter quantity to checkout for: ' + partName);
         $('#qty-modal').modal('show');
     });
 }
