@@ -7,8 +7,6 @@ var bodyParser = require('body-parser');
 const mongoDB = require('./db/mongoDB');
 const logger = require('./logs/logger');
 
-
-
 const app = express();
 
 mongoDB.connect().then(()=>{
@@ -38,6 +36,7 @@ mongoDB.connect().then(()=>{
     app.use('/slack',slack);
     app.use('/users',users);
 
+    app.use(favicon(path.join(__dirname, './public/favicon', 'favicon.ico')));
     // catch 404 and forward to error handler
     app.use(function(req, res, next) {
         var err = new Error('Not Found');
@@ -52,7 +51,7 @@ mongoDB.connect().then(()=>{
         res.locals.error = req.app.get('env') === 'development' ? err : {};
 
         logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
-        
+
         // render the error page
         res.status(err.status || 500);
         res.render('error');
