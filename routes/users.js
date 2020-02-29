@@ -20,7 +20,7 @@ router.post('/get-all',auth.validateToken,auth.validateAdmin,async(req,res,next)
         const users = await db.collection('users').find({},{password:0}).toArray();
         for(let i =0 ; i < users.length ; i = i + 1){
             const userID = ObjectID(users[i]._id);
-            users[i].numCO = await db.collection('checkOut').find({userID:userID}).count();
+            users[i].numCO = await db.collection('checkOut').find({userID:userID,type:{$ne:'returned'}}).count();
         }
         res.send({users:users});
     }catch(err){
