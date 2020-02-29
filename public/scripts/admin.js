@@ -12,7 +12,7 @@ function buildCheckOutMustachObject(data){
     const users = data.users;
     const checkOuts = data.detailedCheckOut;
     console.log(checkOuts.length);
-    const mustacheObject = {unapproved:[],approved:[],out:[],returned:[]};
+    const mustacheObject = {unapproved:[],approved:[],out:[],returned:[],hasApproved:false,hasUnapproved:false,hasOut:false,hasReturned:false};
     //Loop through each checkOut entry
     for(let i=0;i<checkOuts.length;i=i+1){
         const checkOut = checkOuts[i];
@@ -22,6 +22,7 @@ function buildCheckOutMustachObject(data){
 
         case 'approved':
             //Check to see if there exists an entry for the parts based on user
+            mustacheObject.hasApproved = true;
             for(let j=0;j<mustacheObject.approved.length;j=j+1){
                 if(mustacheObject.approved[j].userID===checkOut.userID){
                     mustacheObject.approved[j].parts.push(checkOut);
@@ -34,6 +35,7 @@ function buildCheckOutMustachObject(data){
             }
             break;
         case 'unapproved':
+            mustacheObject.hasUnapproved = true;
             for(let j=0;j<mustacheObject.unapproved.length;j=j+1){
                 if(mustacheObject.unapproved[j].userID===checkOut.userID){
                     mustacheObject.unapproved[j].parts.push(checkOut);
@@ -45,6 +47,7 @@ function buildCheckOutMustachObject(data){
             }
             break;
         case 'out':
+            mustacheObject.hasOut = true;
             for(let j=0;j<mustacheObject.out.length;j=j+1){
                 if(mustacheObject.out[j].userID===checkOut.userID){
                     mustacheObject.out[j].parts.push(checkOut);
@@ -56,6 +59,7 @@ function buildCheckOutMustachObject(data){
             }
             break;
         case 'returned':
+            mustacheObject.hasReturned = true;
             for(let j=0;j<mustacheObject.returned.length;j=j+1){
                 if(mustacheObject.returned[j].userID===checkOut.userID){
                     mustacheObject.returned[j].parts.push(checkOut);
@@ -123,6 +127,24 @@ function refreshCheckOutTable(mustacheObject){
     $('#check-outs-container').html(html);
     filterCheckOutResults();
 }
+async function deleteUnapproved(){
+    const partID = $('#store-unapproved').attr('partID');
+    const userID = $('#store-unapproved').attr('userID');
+    const checkOutID = $('#store-unapproved').attr('checkoutID');
+    try {
+        await $.ajax({
+            method:'POST',
+            url:'/checkouts/delete-unapproved',
+            data:{partID:partID,userID:userID,checkOutID:checkOutID}
+        });
+        await updateCheckOuts();
+        successFlash('Unapproved checkout deleted');
+        return;
+    }catch(err){
+        console.error(err);
+        errorFlash('Could not delete checkout.');
+    }  
+}
 async function approvePart(partID,userID,checkOutID){
     try {
         await $.ajax({
@@ -184,7 +206,27 @@ async function checkPartIn(checkOutID){
         errorFlash('Could not check the part in.');
     }  
 }
+
 function addClickEventsCheckOutTable(){
+    $('.delete-unapproved').on('click',function(){
+        const partID = $(this).attr('partid');
+        const userID = $(this).attr('userid');
+        const checkOutID = $(this).attr('_id');
+        $('#store-unapproved').attr('partID',partID);
+        $('#store-unapproved').attr('userID',userID);
+        $('#store-unapproved').attr('checkoutID',checkOutID);
+        $.confirm({
+            title: 'Confirmation',
+            content: 'Confirm delete a users unapproved check out?',
+            buttons: {
+                confirm: function () {
+                    deleteUnapproved();
+                },
+                cancel: function () {
+                },
+            }
+        });
+    });
     $('.display-check-out').on('click',function(){
         $(this).siblings('.table').toggle();
     });
@@ -328,17 +370,24 @@ function setRequestTriggers(){
     });
 }
 async function filterCheckOutResults(){
-    var filter = getFormData('#filter-check-outs-form');
+    const filter = getFormData('#filter-check-outs-form');
+    const showPartsReturned = $('#show-parts-returned').prop('checked');
     //Build RegExpressions for Search
-    var filterReg = new RegExp(filter['check-outs-filter'],'i');
+    const filterReg = new RegExp(filter['check-outs-filter'],'i');
     //Loop through each of the checkouts
     $('.to-filter').each(function(){
         //Search using RegExpressions
+        const type = $(this).attr('type');
         var filterVal = $(this).attr('filter').search(filterReg);
         //Choose whether to display or not
         if(filterVal>=0)
         {
-            $(this).css('display','');
+            if(type==='returned' && showPartsReturned===false)
+            {
+                $(this).css('display','none');
+            }else{
+                $(this).css('display','');
+            }
         }
         else
         {
@@ -362,7 +411,7 @@ $(document).ready(function(){
         });
     });
     //Filter the current checkouts
-    $('#check-outs-filter').on('input',function(){
+    $('.cause-filter').on('input',function(){
         filterCheckOutResults();
     });
 
@@ -577,5 +626,4 @@ $(document).ready(function(){
             },
         });
     });
-
 });

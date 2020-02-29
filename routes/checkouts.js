@@ -241,7 +241,6 @@ router.post('/get-check-outs',auth.validateToken,auth.validateAdmin,async(req,re
 });
 
 router.post('/add-checkout-admin',auth.validateToken,auth.validateAdmin,async(req,res,next)=>{
-    logger.info(req.body);
     const userEmail = req.body['user-email'].toLowerCase();
     const qty = parseInt(req.body.qty);
     const partID = ObjectID(req.body.partID);
@@ -279,5 +278,22 @@ router.post('/add-checkout-admin',auth.validateToken,auth.validateAdmin,async(re
         res.status(500).send({messge:'Part does not exist.'});
     }
 
+});
+router.post('/delete-unapproved',auth.validateToken,auth.validateAdmin,async(req,res,next)=>{
+    const userID = ObjectID(req.body.userID);
+    const checkOutID = ObjectID(req.body.checkOutID);
+    const partID = ObjectID(req.body.partID);
+    console.log(req.body);
+    if(partExists(partID)){
+        try{
+            await db.collection('checkOut').deleteOne({_id:checkOutID,type:'unapproved'});
+            res.status(200).end();
+        }catch(err){
+            logger.error(err,{userID,checkOutID,partID});
+            res.status(500).send({message:'Could not delete checkout'});
+        }
+    }else{
+        res.status(500).send({message:'Part does not exist.'});
+    }
 });
 module.exports = router;

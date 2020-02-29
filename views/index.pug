@@ -271,11 +271,16 @@ block content
 	if user
 		div(class="container mt-2" id="check-out-container" style="display:none")
 			if admin
+				div(style="display:none" id="store-unapproved")
 				form(id='filter-check-outs-form')
 					#input-row.form-row
 						div(class="form-group col")
+							label(for="show-parts-out") Show Parts Returned
+								input(type="checkbox" class='cause-filter' id="show-parts-returned")
+					#input-row.form-row
+						div(class="form-group col")
 							label(for="filter") Enter something to filter out check outs.
-							input(type="text" id='check-outs-filter' name='check-outs-filter' class="form-control" placeholder="")
+							input(type="text" id='check-outs-filter' name='check-outs-filter' class="form-control cause-filter" placeholder="")
 			div(class="modal fade" id="modify-check-out-modal")
 				div(id="store-check-out" style="display:none")
 				div(class="modal-dialog")

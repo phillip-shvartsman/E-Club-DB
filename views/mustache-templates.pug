@@ -23,9 +23,10 @@ if user
             tr
                 td(colspan="5") {{requestText}}
     script(id='check-out-template' type='template')
+        | {{#hasUnapproved}}
         h2 Your Unapproved Check-Outs
         p This tab contains items you have requested to checkout.
-            div(id='unapproved-check-outs') {{#hasUnapproved}}
+            div(id='unapproved-check-outs') 
                     table(class="table table-sm")
                         thead
                             tr
@@ -51,9 +52,10 @@ if user
                                 td {{amountToCheckOut}}
                                 td {{amountCheckedOut}}
                                 td {{notes}} {{/unapproved}} {{/hasUnapproved}}
+        | {{#hasApproved}}
         h2 Your Approved Check-Outs
         p This tab contains items that the Electronics Club officers have prepared for you. Please visit them to collect them.
-            div(id='approved-check-outs') {{#hasApproved}}
+            div(id='approved-check-outs') 
                     table(class="table table-sm")
                         thead
                             tr
@@ -79,9 +81,10 @@ if user
                                 td(class='change-amount') {{amountToCheckOut}}
                                 td {{amountCheckedOut}}
                                 td {{notes}} {{/approved}} {{/hasApproved}}
+        | {{#hasOut}}
         h2 Items You Currently Have Out
         p This tab contains items that you have picked up.
-            div(id='parts-out') {{#hasOut}}
+            div(id='parts-out') 
                     table(class="table table-sm")
                         thead
                             tr
@@ -107,9 +110,10 @@ if user
                                 td(class='change-amount') {{amountToCheckOut}}
                                 td {{amountCheckedOut}}
                                 td {{notes}} {{/out}} {{/hasOut}}
+        | {{#hasReturned}}
         h2 Previous Checkouts
         p This tab contains items that you have already returned.
-            div(id='parts-returned') {{#hasReturned}}
+            div(id='parts-returned') 
                     table(class="table table-sm")
                         thead
                             tr
@@ -170,9 +174,10 @@ if admin
             tr
                 td(colspan="5") {{requestText}}
     script(id="admin-check-out-table-template" type="template")
+        | {{#hasUnapproved}}
         h3 Unapproved Check-Outs 
         div(id='unapproved-check-outs') {{#unapproved}}
-            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
+            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}" type="unapproved")
                 p {{fName}} {{lName}}.{{dNum}} {{email}}
                 //-img(class="display-check-out" src="/images/down-arrow.png")
                 table(class="table table-sm")
@@ -201,11 +206,12 @@ if admin
                             td(class='change-amount') {{amountToCheckOut}}
                             td {{amountCheckedOut}}
                             td {{notes}}
-                            td <img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class='approve-part' src="/images/check.png"> {{/parts}}
-            | {{/unapproved}}
+                            td <img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class='approve-part' src="/images/check.png"> <img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class="delete-unapproved" src="/images/delete.png">{{/parts}}
+            | {{/unapproved}} {{/hasUnapproved}}
+        | {{#hasApproved}}
         h3 Approved Check-Outs
         div(id='approved-check-outs') {{#approved}}
-            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
+            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}" type="approved")
                 p {{fName}} {{lName}}.{{dNum}} {{email}}
                 //-img(class="display-check-out" src="/images/down-arrow.png")
                 table(class="table table-sm")
@@ -235,10 +241,11 @@ if admin
                             td {{amountCheckedOut}}
                             td {{notes}}
                             td <img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class='set-part-out' src="/images/check.png"><img _id="{{_id}}" userID="{{userID}}" partID="{{partID}}" class='unapprove-part' src="/images/up-arrow.png"> {{/parts}}
-            | {{/approved}}
+            | {{/approved}} {{/hasApproved}}
+        | {{#hasOut}}
         h3 Parts Out
         div(id='parts-out') {{#out}}
-            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
+            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}"  type="out")
                 p {{fName}} {{lName}}.{{dNum}} {{email}}
                 //-img(class="display-check-out" src="/images/down-arrow.png")
                 table(class="table table-sm")
@@ -268,10 +275,11 @@ if admin
                             td {{amountCheckedOut}}
                             td {{notes}}
                             td <img _id="{{_id}}" class='check-in-part' src="/images/check.png"> {{/parts}}
-            | {{/out}}
+            | {{/out}} {{/hasOut}}
+        |{{#hasReturned}}
         h3 Parts Returned
         div(id='parts-returned') {{#returned}}
-            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}")
+            div(class="to-filter" filter="{{fName}} {{lName}} {{dNum}} {{email}}"  type="returned")
                 p {{fName}} {{lName}}.{{dNum}} {{email}}
                 //-img(class="display-check-out" src="/images/down-arrow.png")
                 table(class="table table-sm")
@@ -300,5 +308,6 @@ if admin
                             td(class='change-amount') {{amountToCheckOut}}
                             td {{amountCheckedOut}}
                             td {{notes}}
-                            td <img _id="{{_id}}" class='check-in-part' src="/images/check.png"> {{/parts}}
-            | {{/returned}}
+                            td 
+                            | {{/parts}}
+            | {{/returned}} {{/hasReturned}}
