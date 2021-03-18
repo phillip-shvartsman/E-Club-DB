@@ -26,7 +26,7 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "bcrypt": "^3.0.0",
+    "bcrypt": "^5.0.0",
     "eslint": "^6.4.0"
   }
 }
