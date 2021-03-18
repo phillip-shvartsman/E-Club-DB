@@ -1,15 +1,21 @@
 extends layout
 
 block content
-	//- Title
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	//Developed my Phillip Shvartsman. github=https://github.com/phillip-shvartsman linkedin=https://www.linkedin.com/in/phillip-shvartsman-723856102/
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	h1= title
-	p Welcome to #{title}
+	//-p Welcome to #{title}
 	if admin
 		p You are signed into the admin account.
 		//- button(id='slack-test-message-button') Send Test Slack Message
 	if user && !admin
 		p You are signed in as #{email}
 
+	if showResetPassword
+		include reset-password-modal.pug
+	if user && !admin
+		include greetings-modal.pug
 
 	//- Flash messages used by the function successFlash and errorFlash
 	div(id="successFlash" class="alert alert-success" style="display:none; z-index:500; position:fixed;")
@@ -18,6 +24,21 @@ block content
 
 	//- If not logged in display the following login form.
 	if !user
+		div(class="modal fade" id="forgot-password-modal")
+				//- When you click on the part in the search results, its information is stored here to be used later.
+				div(class="modal-dialog")
+					div(class="modal-content")
+						#part-options
+							div(class="modal-header")
+								h4(class="modal-title") Please enter the email for the account.
+						form(id="forgot-password-form" class='m-3')
+							#input-row.form-row
+								div(class="form-group col")
+									label(for="email") Email:
+									input(type="text" id="forgot-password-email" name="email" min="1" class="form-control" placeholder="Email" required)
+							div(class="form-row")
+								label(for="send-email")
+								button(id="submit-reset-password" type="submit" class="m-3 btn btn-primary") Reset
 		div(id="buttons-container")
 			button(id="show-login" type="button" class="btn btn-primary mr-3") Login
 			button(id="show-register" type="button" class="btn btn-primary") Register
@@ -28,14 +49,15 @@ block content
 				#login-row.form-row
 					div(class="form-group col")
 						label(for="email") Email
-						input(type="text" class="form-control" id="email" name="email" placeholder="Email")
+						input(type="text" class="form-control" id="login-email" name="email" placeholder="Email")
 					div(class="form-group col")
 						label(for="password") Password
-						input(type="password" class="form-control" id="password" name="password" placeholder="Password")
+						input(type="password" class="form-control" id="login-password" name="password" placeholder="Password")
 				div(class="form-row")
 					label(for="login")
 					button(id="login" type="submit" class="btn btn-primary mr-3") Login
-					button(class="cancel-login-register" type="button" class="btn btn-danger") Cancel
+					button(class="cancel-login-register" type="button" class="btn btn-danger mr-3") Cancel
+					button(id="forgot-password" type="button" class="btn btn-danger") Forgot Password
 
 		//-Register form.
 		div(class="container" style="display:none" id="register-container")
@@ -70,16 +92,22 @@ block content
 		div(class="form-row")
 					label(for="logout")
 					button(id="logout" type="button" class="btn btn-primary") Logout
+					if user && !admin
+						button(id="show-greetings-modal-button" type="button" class="btn btn-primary ml-3") Help
 
 	//- Different tabs at the top of th screen.
 	ul(class="nav nav-tabs justify-content-center" id="top-nav")
 		li(class="nav-item")
 			a(class="nav-link active" href="#" id='search-tab') Search
+		if admin
+			li(class="nav-item")
+				a(class="nav-link" href="#" id="users-tab") Users 
 		if user
 			li(class="nav-item")
 				a(class="nav-link" href="#" id="check-out-tab") Check-outs
 			li(class="nav-item")
-				a(class="nav-link" href="#" id="requests-tab") Requests 
+				a(class="nav-link" href="#" id="requests-tab") Requests
+
 
 	//-Contains the search form, the search results and associated modals.
 	#search-container.container
@@ -94,7 +122,7 @@ block content
 					div(class="modal-content")
 						#part-options
 							div(class="modal-header")
-								h4(class="modal-title") How much of this item do you want to check out?
+								h4(id="qty-modal-title" class="modal-title") How much of this item do you want to check out?
 						form(id="qty-form" class='m-3')
 							#input-row.form-row
 								div(class="form-group col")
@@ -102,10 +130,11 @@ block content
 									input(type="number" id="qty" name="qty" min="1" class="form-control" placeholder="Quantity" required)
 							div(class="form-row")
 								label(for="sendQty")
-								button(id="sendQty" type="submit" class="m-3 btn btn-primary") Save
+								button(id="sendQty" type="submit" style="margin:auto" class="btn btn-primary") Save
 
 		//- If you are an admin, you don't have the quantity set modal but you have a modal to change and delete parts from the database.
 		if admin
+			include check-out-for-user-modal.pug
 			div(class="modal fade" id="modify-delete-modal" value="")
 				//- When you click on the part in the search results, its information is stored here to be used later.
 				div(id="storePart" value="" style="display:none")
@@ -113,10 +142,15 @@ block content
 					div(class="modal-content")
 						#part-options
 							div(class="modal-header")
-								h4(class="modal-title") What do you want to do with this part?
+								h4(class="modal-title" id="modify-delete-modal-title") What do you want to do with this part?
 							div(class="modal-body")
-								button(type="button" id="modify-button" class="btn btn-primary") Modify
-								button(type="button" id="delete-button" class="btn btn-danger") Delete
+								div(class='row')
+									div(class="col")
+										button(type="button" id="show-check-out-for-user" class="btn btn-primary m-2") Checkout for User
+									div(class="col")
+										button(type="button" id="modify-button" class="btn btn-primary m-2") Modify
+									div(class="col")
+										button(type="button" id="delete-button" class="btn btn-danger m-2") Delete
 						form(id="modify-form" class='m-3' style="display:none")
 							#input-row.form-row
 								div(class="form-group col")
@@ -220,7 +254,7 @@ block content
 			//- On first load, have the server generate the html
 			tbody(id='search-table-body')
 				each part in partsInventory
-					tr(class="result-row" _id= part._id)
+					tr(class="result-row" _id= part._id partName= part.partName)
 						td= part.partName
 						td= part.cat
 						td= part.subCat
@@ -235,13 +269,18 @@ block content
 
 	//-///////////////CHECK-OUT-CONTAINER////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	if user
-		div(class="container" id="check-out-container" style="display:none")
+		div(class="container mt-2" id="check-out-container" style="display:none")
 			if admin
+				div(style="display:none" id="store-unapproved")
 				form(id='filter-check-outs-form')
 					#input-row.form-row
 						div(class="form-group col")
+							label(for="show-parts-out") Show Parts Returned
+								input(type="checkbox" class='cause-filter' id="show-parts-returned")
+					#input-row.form-row
+						div(class="form-group col")
 							label(for="filter") Enter something to filter out check outs.
-							input(type="text" id='check-outs-filter' name='check-outs-filter' class="form-control" placeholder="")
+							input(type="text" id='check-outs-filter' name='check-outs-filter' class="form-control cause-filter" placeholder="")
 			div(class="modal fade" id="modify-check-out-modal")
 				div(id="store-check-out" style="display:none")
 				div(class="modal-dialog")
@@ -254,11 +293,12 @@ block content
 							#input-row.form-row
 								div(class="form-group col")
 									label(for="quantity") Quantity
-									input(type="text" id="modify-check-out-qty" name="qty" class="form-control" placeholder="Quantity")
+									input(type="number" min="1" id="modify-check-out-qty" name="qty" class="form-control" placeholder="Quantity")
 							div(class="form-row")
 								div(class='form-group col')
 									label(for="modify-qty")
 									button(id="modify-qty" type="submit" class="m-3 btn btn-primary") Save
+								div(class="col")
 								div(class='form-group col')
 									label(for="remove")
 									button(id='remove-unapproved-check-out' type="button" class="m-3 btn btn-warning") Remove
@@ -298,6 +338,9 @@ block content
 				#all-requests.mt-3
 
 	//-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+	//-////USERS-CONTAINER//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	if admin
+		include users-container.pug
+	//-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//-Include the mustache templates.
 	include mustache-templates.pug

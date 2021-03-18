@@ -4,6 +4,7 @@ require('dotenv').config();
 var express = require('express');
 var router = express.Router();
 const mongoDB = require('../db/mongoDB');
+const logger = require('../logs/logger');
 
 const db = mongoDB.get();
 
@@ -16,8 +17,9 @@ var ObjectID = require('mongodb').ObjectID;
 
 
 router.post('/add',auth.validateToken,async (req,res,next)=>{
+    let request;
     try {
-        const request = {
+        request = {
             email:res.locals.decoded.email,
             fName:res.locals.decoded.fName,
             lName:res.locals.decoded.lName,
@@ -31,44 +33,48 @@ router.post('/add',auth.validateToken,async (req,res,next)=>{
         res.end();
     }
     catch(err){
-        console.error('Error in /request/add endpoint.');
-        console.error(err);
+        logger.error('Error in /request/add endpoint.');
+        logger.error(err,{request});
         res.status(500).end();
     }
 });
 
 router.post('/get-all',auth.validateToken,auth.validateAdmin,async (req,res,next)=>{
+    let results;
     try {
-        const results = await db.collection('requests').find({}).toArray();
+        results = await db.collection('requests').find({}).toArray();
         res.send(results);
     }
     catch(err){
-        console.error('Error in /requests/get-all endpoint.');
-        console.error(err);
+        logger.error('Error in /requests/get-all endpoint.');
+        logger.error(err,{results});
         res.status(500).end();
     }
 });
 
 router.post('/delete',auth.validateToken,auth.validateAdmin,async (req,res,next)=>{
+    let _id;
     try {
-        const _id = new ObjectID(req.body._id);
+        _id = new ObjectID(req.body._id);
         await db.collection('requests').deleteOne({_id:_id});
         res.end();
     }catch(err){
-        console.error('Error in /requests/delete endpoint.');
-        console.error(err);
+        logger.error('Error in /requests/delete endpoint.');
+        logger.error(err,{_id});
         res.status(500).end();
     }
 });
 
 router.post('/get-user-requests',auth.validateToken,async(req,res,next)=>{
+    let userID;
+    let results;
     try{
-        const userID = new ObjectID(res.locals.decoded._id);
-        const results = await db.collection('requests').find({userID:userID}).toArray();
+        userID = new ObjectID(res.locals.decoded._id);
+        results = await db.collection('requests').find({userID:userID}).toArray();
         res.send(results);
     }catch(err){
-        console.error('Error in /requests/get-user-requests endpoint.');
-        console.error(err);
+        logger.error('Error in /requests/get-user-requests endpoint.');
+        logger.error(err,{userID,results});
         res.status(500).end();
     }
 });

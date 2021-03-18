@@ -206,4 +206,11 @@ $(document).ready(function(){
             errorFlash(err.responseText);
         }
     });
+    $('#show-greetings-modal-button').on('click',async()=>{
+        $('#greetings-modal').modal('show');
+    });
+    $('#hide-greetings-modal-button').on('click',async()=>{
+        $('#greetings-modal').modal('hide');
+    });
+    $('#greetings-modal').modal('show');
 });

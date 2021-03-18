@@ -12,7 +12,7 @@ function buildCheckOutMustachObject(data){
     const users = data.users;
     const checkOuts = data.detailedCheckOut;
     console.log(checkOuts.length);
-    const mustacheObject = {unapproved:[],approved:[],out:[],returned:[]};
+    const mustacheObject = {unapproved:[],approved:[],out:[],returned:[],hasApproved:false,hasUnapproved:false,hasOut:false,hasReturned:false};
     //Loop through each checkOut entry
     for(let i=0;i<checkOuts.length;i=i+1){
         const checkOut = checkOuts[i];
@@ -22,6 +22,7 @@ function buildCheckOutMustachObject(data){
 
         case 'approved':
             //Check to see if there exists an entry for the parts based on user
+            mustacheObject.hasApproved = true;
             for(let j=0;j<mustacheObject.approved.length;j=j+1){
                 if(mustacheObject.approved[j].userID===checkOut.userID){
                     mustacheObject.approved[j].parts.push(checkOut);
@@ -34,6 +35,7 @@ function buildCheckOutMustachObject(data){
             }
             break;
         case 'unapproved':
+            mustacheObject.hasUnapproved = true;
             for(let j=0;j<mustacheObject.unapproved.length;j=j+1){
                 if(mustacheObject.unapproved[j].userID===checkOut.userID){
                     mustacheObject.unapproved[j].parts.push(checkOut);
@@ -45,6 +47,7 @@ function buildCheckOutMustachObject(data){
             }
             break;
         case 'out':
+            mustacheObject.hasOut = true;
             for(let j=0;j<mustacheObject.out.length;j=j+1){
                 if(mustacheObject.out[j].userID===checkOut.userID){
                     mustacheObject.out[j].parts.push(checkOut);
@@ -56,6 +59,7 @@ function buildCheckOutMustachObject(data){
             }
             break;
         case 'returned':
+            mustacheObject.hasReturned = true;
             for(let j=0;j<mustacheObject.returned.length;j=j+1){
                 if(mustacheObject.returned[j].userID===checkOut.userID){
                     mustacheObject.returned[j].parts.push(checkOut);
@@ -123,6 +127,24 @@ function refreshCheckOutTable(mustacheObject){
     $('#check-outs-container').html(html);
     filterCheckOutResults();
 }
+async function deleteUnapproved(){
+    const partID = $('#store-unapproved').attr('partID');
+    const userID = $('#store-unapproved').attr('userID');
+    const checkOutID = $('#store-unapproved').attr('checkoutID');
+    try {
+        await $.ajax({
+            method:'POST',
+            url:'/checkouts/delete-unapproved',
+            data:{partID:partID,userID:userID,checkOutID:checkOutID}
+        });
+        await updateCheckOuts();
+        successFlash('Unapproved checkout deleted');
+        return;
+    }catch(err){
+        console.error(err);
+        errorFlash('Could not delete checkout.');
+    }  
+}
 async function approvePart(partID,userID,checkOutID){
     try {
         await $.ajax({
@@ -184,7 +206,27 @@ async function checkPartIn(checkOutID){
         errorFlash('Could not check the part in.');
     }  
 }
+
 function addClickEventsCheckOutTable(){
+    $('.delete-unapproved').on('click',function(){
+        const partID = $(this).attr('partid');
+        const userID = $(this).attr('userid');
+        const checkOutID = $(this).attr('_id');
+        $('#store-unapproved').attr('partID',partID);
+        $('#store-unapproved').attr('userID',userID);
+        $('#store-unapproved').attr('checkoutID',checkOutID);
+        $.confirm({
+            title: 'Confirmation',
+            content: 'Confirm delete a users unapproved check out?',
+            buttons: {
+                confirm: function () {
+                    deleteUnapproved();
+                },
+                cancel: function () {
+                },
+            }
+        });
+    });
     $('.display-check-out').on('click',function(){
         $(this).siblings('.table').toggle();
     });
@@ -218,13 +260,31 @@ async function updateCheckOuts(){
             method: 'POST',
             url: '/checkouts/get-check-outs'
         });
-        console.log(data);
+        //console.log(data);
         const mustacheObject = buildCheckOutMustachObject(data);
         refreshCheckOutTable(mustacheObject);
         addClickEventsCheckOutTable();
     }catch(err){
         console.error(err);
         errorFlash('Could not get checkouts.');
+    }
+}
+function refreshUsersTable(users){
+    console.log(users);
+    const template = $('#users-table-template').html();
+    const html = Mustache.render(template,users);
+    $('#users-table-container').empty();
+    $('#users-table-container').html(html);
+}
+async function getUsers(){
+    try {
+        const users = await $.ajax({
+            method:'POST',
+            url:'/users/get-all'
+        });
+        refreshUsersTable(users);
+    }catch(err){
+        errorFlash('Problem retrieving all users.');
     }
 }
 function buildRequestsTable(requests){
@@ -250,7 +310,34 @@ async function getRequests(){
         errorFlash(err);
     }
 }
-
+async function searchUsers(){
+    await $('#email-search-results').slideUp('fast').promise().done();
+    const template = $('#user-search-result').html();
+    const email = $('#check-out-for-user-email').val();
+    const users = await $.ajax({
+        method:'POST',
+        url:'/users/search',
+        data:{email:email,limit:5}
+    });
+    const html = Mustache.render(template,users);
+    $('#email-search-results').empty();
+    $('#email-search-results').append(html);
+    await $('#email-search-results').slideDown('fast').promise().done();
+    applyUserSearchEffects();
+}
+function applyUserSearchEffects(){
+    $('.email-search-result').mouseover(function(){
+        $(this).css('background-color','#007bff');
+        $(this).css('color','white');
+    });
+    $('.email-search-result').mouseleave(function(){
+        $(this).css('background-color','white');
+        $(this).css('color','#212529');
+    });
+    $('.email-search-result').on('click',function(){
+        $('#check-out-for-user-email').val($(this).attr('email'));
+    });
+}
 function setRequestTriggers(){
     $('.request-email-icon').on('click',(e)=>{
         try {
@@ -283,17 +370,24 @@ function setRequestTriggers(){
     });
 }
 async function filterCheckOutResults(){
-    var filter = getFormData('#filter-check-outs-form');
+    const filter = getFormData('#filter-check-outs-form');
+    const showPartsReturned = $('#show-parts-returned').prop('checked');
     //Build RegExpressions for Search
-    var filterReg = new RegExp(filter['check-outs-filter'],'i');
+    const filterReg = new RegExp(filter['check-outs-filter'],'i');
     //Loop through each of the checkouts
     $('.to-filter').each(function(){
         //Search using RegExpressions
+        const type = $(this).attr('type');
         var filterVal = $(this).attr('filter').search(filterReg);
         //Choose whether to display or not
         if(filterVal>=0)
         {
-            $(this).css('display','');
+            if(type==='returned' && showPartsReturned===false)
+            {
+                $(this).css('display','none');
+            }else{
+                $(this).css('display','');
+            }
         }
         else
         {
@@ -317,7 +411,7 @@ $(document).ready(function(){
         });
     });
     //Filter the current checkouts
-    $('#check-outs-filter').on('input',function(){
+    $('.cause-filter').on('input',function(){
         filterCheckOutResults();
     });
 
@@ -343,6 +437,13 @@ $(document).ready(function(){
         await closeAllContainers();
         $('#requests-tab').addClass('active');
         await $('#requests-container').fadeIn('fast').promise().done();
+    });
+
+    $('#users-tab').on('click',async()=>{
+        getUsers();
+        await closeAllContainers();
+        $('#users-tab').addClass('active');
+        await $('#users-container').fadeIn('fast').promise().done();
     });
     
     //Modify entry button
@@ -456,8 +557,65 @@ $(document).ready(function(){
         $('#search-form').trigger('reset');
         createTimeout(searchParts);
     });
+    $('#show-new-user-form').on('click',async(e)=>{
+        $('#add-user-modal').modal('show');
+    });
+    $('#show-check-out-for-user').on('click',async(e)=>{
+        $('#modify-delete-modal').modal('hide');
+        $('#check-out-for-user-modal').modal('show');
+    });
+    $('#check-out-for-user-email').on('input',async(e)=>{
+        createTimeout(searchUsers);
+    });
+    $('#new-user-form').submit(async(e)=>{
+        e.preventDefault();
+        const formData = getFormData('#new-user-form');
+        try {
+            const response = await $.ajax({
+                method:'POST',
+                url:'/users/add-new',
+                data:{
+                    email:formData.newEmail,
+                    confirmEmail:formData.newEmailConfirm
+                }
+            });
+            console.log(response);
+            successFlash('Added the new user.');
+            $('#add-user-modal').modal('hide');
+            await getUsers();
+        }catch(err){
+            console.log(err);
+            errorFlash(err.responseJSON.message);
+        }
+    });
+    $('.new-email-match').on('input',async()=>{
+        const formData = getFormData('#new-user-form');
+        const emailConfirm = $('#newEmailConfirm')[0];
+        if(formData.newEmail!==formData.newEmailConfirm){
+            emailConfirm.setCustomValidity('Emails Don\'t Match');
+        }else{
+            emailConfirm.setCustomValidity('');
+        }
+    });
+    $('#submit-checkout-for-user-form').submit(async(e)=>{
+        e.preventDefault();
+        const formData = getFormData('#submit-checkout-for-user-form');
+        formData.partID = $('#storePart').attr('_id');
+        try{
+            const response = await $.ajax({
+                method:'POST',
+                url:'/checkouts/add-checkout-admin',
+                data:formData
+            });
+            successFlash('Check out added!');
+            $('#check-out-for-user-modal').modal('hide');
+        }catch(err){
+            console.log(err);
+            errorFlash(err.responseJSON.message);
+        }
+    });
     $('#slack-test-message-button').on('click',async()=>{
-        $.ajax({
+        await $.ajax({
             method: 'POST',
             url: '/slack/test-message',
             success: function( res,status ) {
@@ -468,5 +626,4 @@ $(document).ready(function(){
             },
         });
     });
-
 });

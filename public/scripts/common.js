@@ -4,8 +4,9 @@
 
 var timeout = null;
 //Create a timeout that can be reset based on a callback
-function createTimeout(cb)
+function createTimeout(cb,duration)
 {
+    if(duration===undefined) duration=500;
     clearTimeout(timeout);
     timeout = setTimeout(function()
     {
@@ -16,8 +17,9 @@ function createTimeout(cb)
 ////Flash Messages////
 //Add message to either errorFlash or successFlash then show it and fade it out
 //Can be found in index.pug
-function errorFlash(error)
+function errorFlash(error,duration)
 {
+    if (duration === undefined) duration = 1000;
     $('#errorFlash').hide();
     $('#errorFlash').html('<strong>Error!</strong> '+error);
 
@@ -25,19 +27,20 @@ function errorFlash(error)
         setTimeout(function(){
             $('#errorFlash').fadeOut('fast',function(){
             });
-        },1000);
+        },duration);
     });
     
 }
-function successFlash(message)
+function successFlash(message,duration)
 {
+    if (duration === undefined) duration = 1000;
     $('#successFlash').hide();
     $('#successFlash').html('<strong>Success!</strong> '+message);
     $('#successFlash').fadeIn('fast',function(){
         setTimeout(function(){
             $('#successFlash').fadeOut('fast',function(){
             });
-        },1000);
+        },duration);
     });
 }
 
@@ -68,13 +71,20 @@ async function applyRowEffects(){
     //Only Used For Admin
     $('.result-row').on('click',function(){
         const uniq_id = $(this).attr('_id');
+        const partName = $(this).attr('partName');
         $('#storePart').attr('_id',uniq_id);
+        $('#storePart').attr('partName',partName);
+        $('#modify-delete-modal-title').text('What do you want to do with: ' + partName);
+        $('#check-out-for-user-modal-title').text('Enter quantity and email of user for: ' + partName);
         $('#modify-delete-modal').modal('show');
     });
     //Only for User
     $('.result-row').on('click',function(){
-        const uniq_id = $(this).attr('_id');
-        $('#storePart').attr('_id',uniq_id);
+        const _id = $(this).attr('_id');
+        const partName = $(this).attr('partName');
+        $('#storePart').attr('_id',_id);
+        $('#storePart').attr('partName',partName);
+        $('#qty-modal-title').text('Enter quantity to checkout for: ' + partName);
         $('#qty-modal').modal('show');
     });
 }
@@ -129,9 +139,13 @@ async function closeAllContainers(){
     if($('#requests-container').is(':visible')){
         await $('#requests-container').fadeOut('fast').promise().done();
     }  
+    if($('#users-container').is(':visible')){
+        await $('#users-container').fadeOut('fast').promise().done();
+    }
     $('#requests-tab').removeClass('active');
     $('#search-tab').removeClass('active');
     $('#check-out-tab').removeClass('active');
+    $('#users-tab').removeClass('active');
     return Promise.resolve();
 }
 
